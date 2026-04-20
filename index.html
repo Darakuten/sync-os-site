@@ -297,8 +297,9 @@
     border: 1px solid var(--line-strong);
     background: #000;
     box-shadow: 0 60px 120px -40px rgba(109,240,255,0.18), 0 24px 60px -20px rgba(0,0,0,0.6);
+    aspect-ratio: 1440 / 900;
   }
-  .demo-frame video { display: block; width: 100%; }
+  .demo-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
   .demo-tag {
     position: absolute;
     top: 18px; left: 18px;
@@ -311,6 +312,7 @@
     border-radius: 999px;
     color: var(--accent);
     border: 1px solid var(--line);
+    z-index: 2;
   }
   .demo-tag .dot {
     display: inline-block;
@@ -319,6 +321,114 @@
     margin-right: 8px;
     box-shadow: 0 0 10px var(--accent);
     animation: pulse 1.4s ease-in-out infinite;
+  }
+  .demo-controls {
+    position: absolute;
+    bottom: 16px; right: 16px;
+    display: flex; gap: 8px;
+    z-index: 2;
+  }
+  .demo-ctrl {
+    background: rgba(8,9,12,0.75);
+    border: 1px solid var(--line);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+  }
+  .demo-ctrl:hover { background: rgba(8,9,12,0.9); border-color: var(--line-strong); }
+  .chapters {
+    margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chapter {
+    display: flex; flex-direction: column;
+    gap: 4px;
+    flex: 1 1 160px;
+    min-width: 140px;
+    border: 1px solid var(--line);
+    background: rgba(243,237,224,0.02);
+    border-radius: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color .2s ease, background .2s ease, transform .2s ease;
+    text-align: left;
+    color: var(--paper);
+    font-family: inherit;
+  }
+  .chapter:hover {
+    border-color: var(--accent);
+    background: rgba(109,240,255,0.04);
+    transform: translateY(-1px);
+  }
+  .chapter.active {
+    border-color: var(--accent);
+    background: rgba(109,240,255,0.08);
+  }
+  .chapter .ch-time {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+  }
+  .chapter .ch-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--paper);
+  }
+  .chapter .ch-sub {
+    font-size: 12px;
+    color: var(--paper-dim);
+    line-height: 1.4;
+  }
+
+  .demo-callouts {
+    margin-top: 60px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .callout {
+    padding: 32px 28px;
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .callout:last-child { border-right: 0; }
+  .callout .co-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .callout h4 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 28px;
+    line-height: 1.05;
+    margin: 0;
+    color: var(--paper);
+  }
+  .callout h4 em { font-style: italic; color: var(--accent); }
+  .callout p {
+    margin: 0;
+    color: var(--paper-dim);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  @media (max-width: 920px) {
+    .demo-callouts { grid-template-columns: 1fr; }
+    .callout { border-right: 0; border-bottom: 1px solid var(--line); }
+    .callout:last-child { border-bottom: 0; }
   }
   @keyframes pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
@@ -795,18 +905,94 @@
 <section class="section" id="demo" style="padding-top:100px;">
   <div class="sec-head reveal">
     <div>
-      <span class="eyebrow">Live product</span>
+      <span class="eyebrow">Live product · Sync OS v3</span>
       <h2>One screen. <em>The whole human.</em></h2>
     </div>
     <p class="lede">
-      A bio-centric console that maps every signal back to where it lives in the body, then reasons over the
-      whole picture in real time.
+      A bio-centric console that maps every signal back to where it lives in the body, fuses
+      them into five interpretable constructs, then closes the loop with multi-channel
+      interventions — all on a single timeline.
     </p>
   </div>
+
   <div class="demo reveal" style="padding:0;">
     <div class="demo-frame">
       <div class="demo-tag"><span class="dot"></span>Live capture · Sync OS v3</div>
-      <video src="https://github.com/Darakuten/sync-os-site/releases/download/v1/sync_os_demo.mp4" autoplay muted loop playsinline preload="metadata"></video>
+      <video
+        id="demoVideo"
+        src="./assets/sync_os_demo.mp4"
+        poster="./assets/sync_os_demo_poster.jpg"
+        autoplay muted loop playsinline preload="metadata"></video>
+      <div class="demo-controls">
+        <button class="demo-ctrl" id="demoSound">Sound on</button>
+        <button class="demo-ctrl" id="demoFs">Fullscreen</button>
+      </div>
+    </div>
+
+    <div class="chapters" id="chapters">
+      <button class="chapter active" data-t="0">
+        <span class="ch-time">0:00</span>
+        <span class="ch-title">Intro</span>
+        <span class="ch-sub">A bio-adaptive AI platform.</span>
+      </button>
+      <button class="chapter" data-t="5">
+        <span class="ch-time">0:05</span>
+        <span class="ch-title">Body Map</span>
+        <span class="ch-sub">Every signal mapped to the body it came from.</span>
+      </button>
+      <button class="chapter" data-t="9">
+        <span class="ch-time">0:09</span>
+        <span class="ch-title">Integrated Console</span>
+        <span class="ch-sub">Devices, waveforms, constructs, interventions — one view.</span>
+      </button>
+      <button class="chapter" data-t="20">
+        <span class="ch-time">0:20</span>
+        <span class="ch-title">Closed-Loop Intervention</span>
+        <span class="ch-sub">Apply Relax / Focus presets and watch state shift.</span>
+      </button>
+      <button class="chapter" data-t="29">
+        <span class="ch-time">0:29</span>
+        <span class="ch-title">The Platform</span>
+        <span class="ch-sub">Sensing → Sync.OS Core → Actuation.</span>
+      </button>
+      <button class="chapter" data-t="42">
+        <span class="ch-time">0:42</span>
+        <span class="ch-title">Outro</span>
+        <span class="ch-sub">FastNeura Inc. / Sync.</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="demo-callouts reveal">
+    <div class="callout">
+      <span class="co-num">01 · Body-centric UI</span>
+      <h4>The body is the <em>primary axis,</em> not the device.</h4>
+      <p>
+        Existing biosignal tools force you to think in channels and probes. Sync OS inverts it:
+        a single anatomical canvas with each modality docked to where it physically lives —
+        EEG at the scalp, ECG at the chest, PPG at the wrist, EDA at the palm. Streams flow
+        out from the body, not into a spreadsheet.
+      </p>
+    </div>
+    <div class="callout">
+      <span class="co-num">02 · Real-time fusion</span>
+      <h4>Eight modalities reduced to <em>five constructs.</em></h4>
+      <p>
+        The Sync.OS core continuously fuses raw signals into five interpretable axes —
+        <em>arousal · valence · focus · stress load · coherence</em>. The dashboard shows
+        these scores updating live, so any product or clinician on top of Sync OS reasons
+        over the same shared vocabulary of state.
+      </p>
+    </div>
+    <div class="callout">
+      <span class="co-num">03 · Closed-loop intervention</span>
+      <h4>Sensing only matters if you <em>act on it.</em></h4>
+      <p>
+        Intervention is a first-class output. Trigger Relax / Focus presets, drive haptic
+        watches, audio entrainment, light, and agent calls — then watch the constructs
+        shift on the same screen. Sync OS is the substrate that makes the loop short
+        enough to feel.
+      </p>
     </div>
   </div>
 </section>
@@ -1110,6 +1296,45 @@
     });
   }, { threshold: 0.12 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Demo chapter controls
+  const v = document.getElementById('demoVideo');
+  const chapters = Array.from(document.querySelectorAll('#chapters .chapter'));
+  if (v && chapters.length) {
+    chapters.forEach(ch => {
+      ch.addEventListener('click', () => {
+        const t = parseFloat(ch.dataset.t || 0);
+        try { v.currentTime = t; v.play(); } catch (e) {}
+      });
+    });
+    v.addEventListener('timeupdate', () => {
+      const t = v.currentTime;
+      let active = chapters[0];
+      for (const ch of chapters) {
+        if (parseFloat(ch.dataset.t) <= t) active = ch;
+      }
+      chapters.forEach(c => c.classList.toggle('active', c === active));
+    });
+
+    const sound = document.getElementById('demoSound');
+    if (sound) {
+      sound.addEventListener('click', () => {
+        v.muted = !v.muted;
+        sound.textContent = v.muted ? 'Sound on' : 'Sound off';
+      });
+    }
+    const fs = document.getElementById('demoFs');
+    if (fs) {
+      fs.addEventListener('click', () => {
+        const el = v.parentElement;
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else if (el.requestFullscreen) {
+          el.requestFullscreen();
+        }
+      });
+    }
+  }
 </script>
 
 </body>
