@@ -531,7 +531,7 @@
     .stack-col:last-child { border-bottom: 0; }
   }
 
-  /* === Constructs === */
+  /* === States === */
   .constructs {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -715,6 +715,84 @@
     .uses { grid-template-columns: 1fr; }
   }
 
+  /* === Partnerships === */
+  .partners {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    background:
+      radial-gradient(700px 280px at 12% 0%, rgba(109,240,255,0.08), transparent 60%),
+      radial-gradient(600px 280px at 88% 100%, rgba(255,181,71,0.06), transparent 60%),
+      linear-gradient(180deg, rgba(243,237,224,0.02), rgba(243,237,224,0));
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .partner-cell {
+    padding: 56px 44px;
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 18px;
+    position: relative;
+  }
+  .partner-cell:last-child { border-right: 0; }
+  .partner-cell .ptag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .partner-cell .pnum {
+    font-family: var(--serif);
+    font-size: clamp(80px, 11vw, 168px);
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+    color: var(--paper);
+    margin: 0;
+  }
+  .partner-cell .pnum em { font-style: italic; color: var(--accent); }
+  .partner-cell .pnum sup {
+    font-size: 0.34em;
+    vertical-align: top;
+    color: var(--paper-dim);
+    margin-left: 6px;
+    font-style: normal;
+  }
+  .partner-cell h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(26px, 2.4vw, 36px);
+    line-height: 1.1;
+    margin: 0;
+    color: var(--paper);
+  }
+  .partner-cell h3 em { font-style: italic; color: var(--accent); }
+  .partner-cell p {
+    margin: 0;
+    color: var(--paper-dim);
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 420px;
+  }
+  .partner-pills {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
+  }
+  .partner-pills .pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--paper-dim);
+    border: 1px solid var(--line-strong);
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(243,237,224,0.03);
+  }
+  @media (max-width: 820px) {
+    .partners { grid-template-columns: 1fr; }
+    .partner-cell { border-right: 0; border-bottom: 1px solid var(--line); }
+    .partner-cell:last-child { border-bottom: 0; }
+  }
+
   /* === Numbers === */
   .numbers {
     display: grid;
@@ -850,8 +928,9 @@
     <nav class="nav-links">
       <a href="#product">Product</a>
       <a href="#stack">Stack</a>
-      <a href="#constructs">Constructs</a>
+      <a href="#states">States</a>
       <a href="#architecture">Architecture</a>
+      <a href="#partners">Partners</a>
       <a href="#vision">Vision</a>
     </nav>
     <a class="nav-cta" href="#contact">Request access →</a>
@@ -880,7 +959,7 @@
   <div class="hero-meta">
     <div><div class="k">Modalities</div><div class="v">8<em>+</em></div></div>
     <div><div class="k">Loop latency</div><div class="v"><em>~120</em>ms</div></div>
-    <div><div class="k">Constructs</div><div class="v">5</div></div>
+    <div><div class="k">States</div><div class="v">5</div></div>
     <div><div class="k">Form factors</div><div class="v">Watch <em>·</em> Cap <em>·</em> Patch</div></div>
   </div>
 </section>
@@ -910,7 +989,7 @@
     </div>
     <p class="lede">
       A bio-centric console that maps every signal back to where it lives in the body, fuses
-      them into five interpretable constructs, then closes the loop with multi-channel
+      them into five interpretable states, then closes the loop with multi-channel
       interventions — all on a single timeline.
     </p>
   </div>
@@ -943,7 +1022,7 @@
       <button class="chapter" data-t="9">
         <span class="ch-time">0:09</span>
         <span class="ch-title">Integrated Console</span>
-        <span class="ch-sub">Devices, waveforms, constructs, interventions — one view.</span>
+        <span class="ch-sub">Devices, waveforms, states, interventions — one view.</span>
       </button>
       <button class="chapter" data-t="20">
         <span class="ch-time">0:20</span>
@@ -976,12 +1055,12 @@
     </div>
     <div class="callout">
       <span class="co-num">02 · Real-time fusion</span>
-      <h4>Eight modalities reduced to <em>five constructs.</em></h4>
+      <h4>Eight modalities reduced to <em>five states.</em></h4>
       <p>
-        The Sync.OS core continuously fuses raw signals into five interpretable axes —
-        <em>arousal · valence · focus · stress load · coherence</em>. The dashboard shows
-        these scores updating live, so any product or clinician on top of Sync OS reasons
-        over the same shared vocabulary of state.
+        The Sync.OS core continuously fuses raw signals into five interpretable scores —
+        <em>stress · emotion · fatigue · attention · cogload</em>. The dashboard shows
+        these states updating live, so any product or clinician on top of Sync OS reasons
+        over the same shared vocabulary.
       </p>
     </div>
     <div class="callout">
@@ -989,7 +1068,7 @@
       <h4>Sensing only matters if you <em>act on it.</em></h4>
       <p>
         Intervention is a first-class output. Trigger Relax / Focus presets, drive haptic
-        watches, audio entrainment, light, and agent calls — then watch the constructs
+        watches, audio entrainment, light, and agent calls — then watch the states
         shift on the same screen. Sync OS is the substrate that makes the loop short
         enough to feel.
       </p>
@@ -1043,7 +1122,7 @@
     <div class="stack-col">
       <div class="num">02 / SYNC CORE</div>
       <h3><span class="glyph">✦</span>Understand the state.</h3>
-      <p>Multimodal foundation models fuse signals into five interpretable constructs of the human state — updated continuously, on-device when needed.</p>
+      <p>Multimodal foundation models fuse signals into five interpretable states of the human — updated continuously, on-device when needed.</p>
       <div class="chips">
         <span class="chip accent">Multimodal Fusion</span>
         <span class="chip accent">State Inference</span>
@@ -1067,54 +1146,55 @@
   </div>
 </section>
 
-<!-- CONSTRUCTS -->
-<section class="section" id="constructs">
+<!-- STATES -->
+<section class="section" id="states">
   <div class="sec-head reveal">
     <div>
-      <span class="eyebrow">Five constructs</span>
+      <span class="eyebrow">Five states</span>
       <h2>The vocabulary of <em>state.</em></h2>
     </div>
     <p class="lede">
-      Sync OS reduces dozens of raw biosignals into five interpretable axes — the smallest set
-      that lets software meaningfully respond to a human in the loop.
+      Sync OS reduces dozens of raw biosignals into the same five interpretable scores
+      surfaced in the live console — the smallest vocabulary that lets software
+      meaningfully respond to a human in the loop.
     </p>
   </div>
 
   <div class="constructs reveal">
-    <div class="construct">
+    <div class="construct" style="--accent-c:#ff8a4c;">
+      <div class="gauge" style="background: radial-gradient(circle, rgba(255,138,76,0.20), transparent 65%);"></div>
+      <div class="label">01 · Stress</div>
+      <div class="name"><b>STRESS</b></div>
+      <div class="desc">Acute autonomic load. Derived from LF/HF ratio, electrodermal response and heart rate.</div>
+      <div class="score"><span>0.34</span><div class="bar"><i data-w="34" style="background:linear-gradient(90deg,#ff8a4c,#ffb547)"></i></div></div>
+    </div>
+    <div class="construct" style="--accent-c:#ff4e7d;">
+      <div class="gauge" style="background: radial-gradient(circle, rgba(255,78,125,0.20), transparent 65%);"></div>
+      <div class="label">02 · Emotion</div>
+      <div class="name"><b>EMOTION</b></div>
+      <div class="desc">Affective valence. Inferred from frontal alpha asymmetry and blink dynamics.</div>
+      <div class="score"><span>0.62</span><div class="bar"><i data-w="62" style="background:linear-gradient(90deg,#ff4e7d,#ff8a4c)"></i></div></div>
+    </div>
+    <div class="construct" style="--accent-c:#ff6b4a;">
+      <div class="gauge" style="background: radial-gradient(circle, rgba(255,107,74,0.20), transparent 65%);"></div>
+      <div class="label">03 · Fatigue</div>
+      <div class="name"><b>FATIGUE</b></div>
+      <div class="desc">Mental fatigue. Combines alpha/beta ratio, respiration rate and tonic heart rate.</div>
+      <div class="score"><span>0.28</span><div class="bar"><i data-w="28" style="background:linear-gradient(90deg,#ff6b4a,#ffb547)"></i></div></div>
+    </div>
+    <div class="construct" style="--accent-c:#7df9ff;">
       <div class="gauge"></div>
-      <div class="label">01 · Arousal</div>
-      <div class="name"><b>覚醒</b></div>
-      <div class="desc">Sympathetic activation. How "on" the system is — from drowsy floor to threat response.</div>
-      <div class="score"><span>0.72</span><div class="bar"><i data-w="72"></i></div></div>
+      <div class="label">04 · Attention</div>
+      <div class="name"><b>ATTENTION</b></div>
+      <div class="desc">Focused engagement. Driven by beta power, alpha/beta ratio and blink suppression.</div>
+      <div class="score"><span>0.81</span><div class="bar"><i data-w="81" style="background:linear-gradient(90deg,#7df9ff,#9bffd4)"></i></div></div>
     </div>
-    <div class="construct">
-      <div class="gauge" style="background: radial-gradient(circle, rgba(255,181,71,0.2), transparent 65%);"></div>
-      <div class="label">02 · Valence</div>
-      <div class="name"><b>感情価</b></div>
-      <div class="desc">Affective polarity. The pleasant/unpleasant axis of the moment.</div>
-      <div class="score"><span>+0.41</span><div class="bar"><i data-w="68"></i></div></div>
-    </div>
-    <div class="construct">
-      <div class="gauge"></div>
-      <div class="label">03 · Focus</div>
-      <div class="name"><b>注意</b></div>
-      <div class="desc">Attentional engagement. Sustained, narrow vs. diffuse vs. interrupted.</div>
-      <div class="score"><span>0.81</span><div class="bar"><i data-w="81"></i></div></div>
-    </div>
-    <div class="construct">
-      <div class="gauge" style="background: radial-gradient(circle, rgba(255,111,138,0.18), transparent 65%);"></div>
-      <div class="label">04 · Stress load</div>
-      <div class="name"><b>負荷</b></div>
-      <div class="desc">Allostatic / cognitive load. How much capacity is being spent right now.</div>
-      <div class="score"><span>0.34</span><div class="bar"><i data-w="34"></i></div></div>
-    </div>
-    <div class="construct">
-      <div class="gauge"></div>
-      <div class="label">05 · Coherence</div>
-      <div class="name"><b>同調</b></div>
-      <div class="desc">Cross-system synchrony. How aligned brain, heart, breath and motion are with each other.</div>
-      <div class="score"><span>0.58</span><div class="bar"><i data-w="58"></i></div></div>
+    <div class="construct" style="--accent-c:#b4e23f;">
+      <div class="gauge" style="background: radial-gradient(circle, rgba(180,226,63,0.18), transparent 65%);"></div>
+      <div class="label">05 · CogLoad</div>
+      <div class="name"><b>COGLOAD</b></div>
+      <div class="desc">Cognitive load (n-back equivalent). Beta activity, heart rate and LF/HF together.</div>
+      <div class="score"><span>0.46</span><div class="bar"><i data-w="46" style="background:linear-gradient(90deg,#b4e23f,#7df9ff)"></i></div></div>
     </div>
   </div>
 </section>
@@ -1219,12 +1299,60 @@
   </div>
 </section>
 
+<!-- PARTNERSHIPS -->
+<section class="section" id="partners" style="padding-top:40px; padding-bottom:40px;">
+  <div class="sec-head reveal">
+    <div>
+      <span class="eyebrow">Partnerships & research</span>
+      <h2>Built with the people <em>shipping the future.</em></h2>
+    </div>
+    <p class="lede">
+      Sync OS is co-developed alongside hospitals, research labs and industry partners
+      across Japan, the US and the EU.
+    </p>
+  </div>
+
+  <div class="partners reveal">
+    <div class="partner-cell">
+      <span class="ptag">Industry partnerships</span>
+      <div class="pnum"><em>20</em><sup>+</sup></div>
+      <h3>Companies <em>integrating</em> Sync OS.</h3>
+      <p>
+        Medical device makers, wearable OEMs, automotive HMI teams, performance and
+        wellness brands building on the bio-adaptive layer.
+      </p>
+      <div class="partner-pills">
+        <span class="pill">MedTech</span>
+        <span class="pill">Wearables</span>
+        <span class="pill">Automotive HMI</span>
+        <span class="pill">Performance</span>
+        <span class="pill">Consumer AI</span>
+      </div>
+    </div>
+    <div class="partner-cell">
+      <span class="ptag">Research collaborations</span>
+      <div class="pnum"><em>4</em></div>
+      <h3>Top-tier <em>research institutes.</em></h3>
+      <p>
+        Joint research and clinical studies with leading neuroscience, psychiatry and
+        human-factors labs — the source of our datasets, biomarkers and ground truth.
+      </p>
+      <div class="partner-pills">
+        <span class="pill">Neuroscience</span>
+        <span class="pill">Psychiatry</span>
+        <span class="pill">Human factors</span>
+        <span class="pill">Sports science</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- NUMBERS -->
 <section class="section" style="padding-top:40px;">
   <div class="numbers reveal">
     <div><div class="v"><em>8+</em></div><div class="k">Biosignal modalities</div></div>
     <div><div class="v">~120<sup>ms</sup></div><div class="k">Sense → act loop</div></div>
-    <div><div class="v"><em>5</em></div><div class="k">Construct dimensions</div></div>
+    <div><div class="v"><em>5</em></div><div class="k">State dimensions</div></div>
     <div><div class="v">100<sup>%</sup></div><div class="k">On-device option</div></div>
   </div>
 </section>
@@ -1286,7 +1414,7 @@
     entries.forEach(e => {
       if (e.isIntersecting) {
         e.target.classList.add('in');
-        // animate construct bars
+        // animate state bars
         e.target.querySelectorAll('.bar > i').forEach(i => {
           const w = i.getAttribute('data-w') || 0;
           requestAnimationFrame(() => { i.style.width = w + '%'; });

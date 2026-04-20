@@ -1,14 +1,17 @@
-"""Procedural cinematic ambient track for Sync OS demo (~49s).
+"""Sync OS demo soundtrack — "Ghost in the Shell" inspired (~49s, A minor).
 
-Design notes:
-- Key: A minor. Drone-on-tonic with builds and resolution.
-- Structure follows demo chapter timeline.
-- Output: 48 kHz stereo WAV.
+Design principles
+- Eastern modal flavor: A pentatonic-minor (A C D E G) melodic motif.
+- Suspended, mystical pads (Am9: A C E G B).
+- Taiko-like low pulse instead of an EDM kick.
+- Bell / kalimba-like tones for the ostinato (clean sines + harmonic taps).
+- NO white-noise riser, NO airy noise bed (was previously perceived as "ザー").
+- Brighter octave shimmer + breath-like pulse at climax for an uplifting lift.
+- All synthesized; royalty-free.
 """
 
 import numpy as np
 import wave
-import struct
 import sys
 import os
 
@@ -18,22 +21,8 @@ N = int(SR * DUR)
 T = np.arange(N) / SR
 
 
-def env_adsr(start, attack, hold, release, peak=1.0):
-    """Generate an envelope of length N over the time axis."""
-    e = np.zeros(N)
-    s = int(start * SR)
-    a = int(attack * SR)
-    h = int(hold * SR)
-    r = int(release * SR)
-    if s >= N:
-        return e
-    e[s:s + a] = np.linspace(0, peak, a, endpoint=False) if a > 0 else 0
-    e[s + a:s + a + h] = peak
-    e[s + a + h:s + a + h + r] = np.linspace(peak, 0, r, endpoint=False) if r > 0 else 0
-    return e[:N]
-
-
 def env_ramp(t0, t1, v0, v1):
+    """Hold v0, ramp to v1 over [t0,t1], then hold v1."""
     e = np.full(N, v0, dtype=np.float64)
     i0 = max(0, int(t0 * SR))
     i1 = min(N, int(t1 * SR))
@@ -47,134 +36,235 @@ def sine(freq, phase=0.0):
     return np.sin(2 * np.pi * freq * T + phase)
 
 
-def saw(freq):
-    # Simple band-limited approximation via summed sines (first 5 harmonics)
-    out = np.zeros(N)
-    for k in range(1, 6):
-        out += np.sin(2 * np.pi * freq * k * T) / k
-    return out * 0.6
-
-
-def soft_clip(x, drive=1.5):
+def soft_clip(x, drive=1.0):
     return np.tanh(x * drive)
 
 
-# --- Sub bass: 55 Hz (A1) drone with slow tremolo
-sub_lfo = 0.06 * np.sin(2 * np.pi * 0.15 * T)
-sub = sine(55.0) * (0.8 + sub_lfo)
-sub_env = env_ramp(0, 5, 0.0, 0.55) * env_ramp(40, 49, 1.0, 0.0)
+def place(buffer, t_start, samples):
+    """Add `samples` into buffer starting at time t_start (s). Truncates if needed."""
+    i = int(t_start * SR)
+    if i >= N:
+        return
+    end = min(N, i + len(samples))
+    buffer[i:end] += samples[:end - i]
+
+
+# ---------------------------------------------------------------------------
+# 1. Sub bass — A1 (55 Hz) drone with very slow tremolo
+# ---------------------------------------------------------------------------
+sub_lfo = 0.05 * np.sin(2 * np.pi * 0.12 * T)
+sub = sine(55.0) * (0.85 + sub_lfo)
+sub_env = env_ramp(0, 5, 0.0, 0.45) * env_ramp(43, 49, 1.0, 0.0)
 sub *= sub_env
 
-# --- Sub octave click for body
-sub2 = sine(110.0) * 0.3 * env_ramp(8, 12, 0, 0.4) * env_ramp(43, 49, 1.0, 0.0)
+# ---------------------------------------------------------------------------
+# 2. Pad — Am9 (A2 C3 E3 G3 B3) with subtle detune chorus.
+#     This is the cinematic, suspended chord that gives the GitS aura.
+# ---------------------------------------------------------------------------
+def pad_voice(f, det=0.004):
+    a = sine(f * (1 + det))
+    b = sine(f * (1 - det))
+    c = sine(f * 0.5)  # sub-octave reinforcement
+    return (a + b + 0.5 * c) / 2.5
 
-# --- Pad: Am triad (A2, C3, E3) layered with slight detune
-def pad_voice(f, det=0.0):
-    return 0.5 * (sine(f * (1 + det)) + sine(f * (1 - det) * 0.5)) * 0.7
 
-pad = (pad_voice(110.0, 0.003) + pad_voice(130.81, 0.0035) + pad_voice(164.81, 0.004)) / 3.0
-# soft lowpass via cumulative average (cheap)
+pad_freqs = [110.0, 130.81, 164.81, 196.0, 246.94]   # A2 C3 E3 G3 B3 (Am9)
+pad = sum(pad_voice(f, 0.003 + 0.001 * i) for i, f in enumerate(pad_freqs)) / len(pad_freqs)
+# slight low-pass via 3-point moving avg
 pad = (pad + np.roll(pad, 1) + np.roll(pad, 2)) / 3.0
-pad_env = env_ramp(0, 6, 0.0, 0.45) * env_ramp(28, 30, 1.0, 0.85) * env_ramp(43, 49, 1.0, 0.0)
+pad_env = env_ramp(0, 7, 0.0, 0.40) * env_ramp(28, 31, 1.0, 0.85) * env_ramp(45, 49, 1.0, 0.0)
 pad *= pad_env
 
-# --- Big climax pad (full Am with octaves) at concept reveal
-big = (sine(220.0) + sine(261.63) + sine(329.63) + sine(440.0) + sine(523.25)) / 5.0
-big_env = env_ramp(28, 31, 0.0, 0.55) * env_ramp(40, 43, 1.0, 0.3) * env_ramp(46, 49, 1.0, 0.0)
+# ---------------------------------------------------------------------------
+# 3. Climax pad — open-fifth + octaves stack (A2 E3 A3 E4 A4 E5)
+#     Big, uplifting reveal at the concept scene (~29-42s).
+# ---------------------------------------------------------------------------
+big_freqs = [110.0, 164.81, 220.0, 329.63, 440.0, 659.25]
+big = sum(sine(f) for f in big_freqs) / len(big_freqs)
+big = soft_clip(big, drive=1.1)
+big_env = env_ramp(28, 32, 0.0, 0.50) * env_ramp(40, 43, 1.0, 0.30) * env_ramp(46, 49, 1.0, 0.0)
 big *= big_env
 
-# --- Kick: short transient at quarter notes (110 BPM), starts at 8s
-bpm = 110.0
-beat = 60.0 / bpm  # 0.545s
-kick = np.zeros(N)
-kick_start = 8.0
-kick_end = 42.0
-t_beat = kick_start
-while t_beat < kick_end:
-    i = int(t_beat * SR)
-    if i < N:
-        # 60Hz transient with quick decay (~0.18s)
-        dec = int(0.18 * SR)
-        end = min(N, i + dec)
-        env = np.exp(-np.linspace(0, 5, end - i))
-        freq_sweep = np.linspace(120, 50, end - i)
-        phase = 2 * np.pi * np.cumsum(freq_sweep) / SR
-        kick[i:end] += np.sin(phase) * env * 0.9
-    t_beat += beat
-kick *= env_ramp(8, 9, 0, 1) * env_ramp(20, 22, 1, 0.4) * env_ramp(28, 30, 0.4, 1.0) * env_ramp(40, 42, 1, 0)
+# ---------------------------------------------------------------------------
+# 4. Taiko-like low pulse — slow half-note hits, replaces the EDM kick
+# ---------------------------------------------------------------------------
+bpm = 96.0
+beat = 60.0 / bpm  # 0.625s
+half = beat * 2.0
 
-# --- Arp shimmer (16th notes) cycling A5 C6 E6 A5
-arp_notes = [880.0, 1046.5, 1318.5, 1760.0]
-arp = np.zeros(N)
-arp_start = 10.0
-arp_end = 42.0
-step = beat / 4.0  # 16th
-i_step = 0
-t_step = arp_start
-while t_step < arp_end:
-    f = arp_notes[i_step % len(arp_notes)]
-    i = int(t_step * SR)
-    dec = int(0.22 * SR)
-    end = min(N, i + dec)
-    env = np.exp(-np.linspace(0, 6, end - i))
-    arp[i:end] += np.sin(2 * np.pi * f * (np.arange(end - i) / SR)) * env * 0.18
-    i_step += 1
+def taiko_hit(amp=1.0, decay_s=0.45):
+    n = int(decay_s * SR)
+    env = np.exp(-np.linspace(0, 4, n))
+    # Pitch sweep: 90 → 45 Hz (gives the punchy, hand-played taiko feel)
+    sweep = np.linspace(90, 45, n)
+    phase = 2 * np.pi * np.cumsum(sweep) / SR
+    body = np.sin(phase)
+    # subtle attack click
+    click_n = int(0.012 * SR)
+    click = np.random.normal(0, 1, click_n) * np.exp(-np.linspace(0, 8, click_n)) * 0.3
+    out = body * env * amp
+    out[:click_n] += click * amp
+    return out
+
+taiko = np.zeros(N)
+# Half-note pulse from 6s → 42s
+t_hit = 6.0
+while t_hit < 42.0:
+    # Vary intensity: louder at downbeats every 4 hits
+    idx = int(round((t_hit - 6.0) / half))
+    amp = 0.95 if idx % 4 == 0 else 0.55
+    place(taiko, t_hit, taiko_hit(amp=amp))
+    t_hit += half
+# Final accent at 42s
+place(taiko, 41.5, taiko_hit(amp=1.0, decay_s=1.5))
+taiko *= env_ramp(6, 8, 0, 1) * env_ramp(40, 43, 1, 0)
+
+# ---------------------------------------------------------------------------
+# 5. Ostinato motif — A pentatonic minor melody on bell-like FM-ish synth
+#     Repeats with slight variation for forward motion.
+# ---------------------------------------------------------------------------
+# Pattern in 8th notes (12 notes covering 6 beats at 96 BPM):
+# A4 - C5 - D5 - E5 - D5 - C5 - E5 - G5 - A5 - G5 - E5 - C5
+A4 = 440.0; C5 = 523.25; D5 = 587.33; E5 = 659.25; G5 = 783.99; A5 = 880.0
+melody = [A4, C5, D5, E5, D5, C5, E5, G5, A5, G5, E5, C5]
+
+
+def bell_note(freq, dur=0.55, amp=0.22):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    # FM-ish: carrier + small modulator gives metallic shimmer
+    mod = np.sin(2 * np.pi * freq * 2.0 * t) * 0.5
+    car = np.sin(2 * np.pi * freq * t + mod)
+    # subtle 3rd partial
+    car += 0.25 * np.sin(2 * np.pi * freq * 3 * t)
+    env = np.exp(-np.linspace(0, 6, n))
+    # add soft attack pluck
+    attack = np.exp(-np.linspace(0, 80, n)) * 0.4
+    return car * (env + attack) * amp
+
+
+bell = np.zeros(N)
+ostinato_start = 9.0
+ostinato_end = 42.0
+step = beat / 2.0  # 8th notes
+t_step = ostinato_start
+i = 0
+while t_step < ostinato_end:
+    f = melody[i % len(melody)]
+    # Drop volume on the off-beats for groove
+    amp = 0.22 if i % 2 == 0 else 0.16
+    place(bell, t_step, bell_note(f, dur=0.6, amp=amp))
+    i += 1
     t_step += step
-arp *= env_ramp(10, 12, 0, 1) * env_ramp(20, 24, 1, 0.5) * env_ramp(28, 30, 0.5, 1.0) * env_ramp(40, 42, 1, 0)
 
-# --- Filtered noise sweep (riser) at 23-29s and 40-43s
-def noise_riser(t0, t1, level=0.25):
-    n = np.zeros(N)
-    i0 = int(t0 * SR); i1 = int(t1 * SR)
-    if i1 > i0:
-        white = np.random.normal(0, 1, i1 - i0)
-        # cheap "lowpass that opens" via accumulated exponential smoothing
-        # ramp the smoothing so it gets brighter
-        ramp = np.linspace(0.95, 0.5, i1 - i0)
-        out = np.zeros_like(white)
-        prev = 0.0
-        for k in range(len(white)):
-            out[k] = ramp[k] * prev + (1 - ramp[k]) * white[k]
-            prev = out[k]
-        amp = np.linspace(0, level, i1 - i0)
-        n[i0:i1] = out * amp
-    return n
+bell *= env_ramp(9, 11, 0, 1) * env_ramp(20, 24, 1, 0.55) * env_ramp(28, 30, 0.55, 1.0) * env_ramp(40, 42, 1, 0)
 
-riser = noise_riser(23, 29, 0.30) + noise_riser(40, 43, 0.18)
+# ---------------------------------------------------------------------------
+# 6. Choir-like vowel pad — sine stack tuned to evoke ethereal female "ahh"
+#     Comes in at the climax (~28-42s).
+# ---------------------------------------------------------------------------
+def choir(freq, dur=14.0):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    # Three slightly detuned voices + 2nd partial
+    a = np.sin(2 * np.pi * freq * t)
+    b = np.sin(2 * np.pi * freq * 1.005 * t)
+    c = np.sin(2 * np.pi * freq * 0.995 * t)
+    d = np.sin(2 * np.pi * freq * 2 * t) * 0.25
+    voice = (a + b + c + d) / 3.5
+    # gentle vibrato
+    vib = 1 + 0.005 * np.sin(2 * np.pi * 5.5 * t)
+    voice *= vib
+    # ahh-shaped envelope
+    env_attack = np.linspace(0, 1, int(2.0 * SR))
+    env_release = np.linspace(1, 0, int(3.0 * SR))
+    sustain_n = n - len(env_attack) - len(env_release)
+    if sustain_n < 0:
+        sustain_n = 0
+    env = np.concatenate([env_attack, np.ones(sustain_n), env_release])[:n]
+    return voice * env
 
-# --- Soft white-noise air bed throughout
-air = np.random.normal(0, 1, N)
-# smooth
-prev = 0.0
-for k in range(0, N, 1):
-    air[k] = 0.97 * prev + 0.03 * air[k]
-    prev = air[k]
-air *= 0.04 * env_ramp(0, 5, 0, 1) * env_ramp(45, 49, 1, 0)
 
-# --- Mix
-mix = sub + sub2 + pad + big + kick + arp + riser + air
-# soft saturation
-mix = soft_clip(mix, drive=0.9)
+choir_buf = np.zeros(N)
+# Choir voices at A4, E5, G5 (top of Am9 cluster)
+for f, amp in [(440.0, 0.18), (659.25, 0.13), (783.99, 0.10)]:
+    voice = choir(f, dur=14.0) * amp
+    place(choir_buf, 28.5, voice)
+choir_buf *= env_ramp(28.5, 30, 0, 1) * env_ramp(42, 44, 1, 0)
 
-# --- Cheap stereo widen via Haas effect (different short delays per channel)
-def stereo_widen(mono, delay_ms_l=0.0, delay_ms_r=12.0):
-    dl = int(delay_ms_l * SR / 1000)
-    dr = int(delay_ms_r * SR / 1000)
-    L = np.zeros(N)
-    R = np.zeros(N)
-    L[dl:] = mono[:N - dl] if dl > 0 else mono
-    R[dr:] = mono[:N - dr] if dr > 0 else mono
-    return L, R
+# ---------------------------------------------------------------------------
+# 7. Subtle breath swell at transitions (filtered, not noisy)
+#     Use a slow LFO modulated tone instead of white noise.
+# ---------------------------------------------------------------------------
+def breath_pulse(freq=220.0, dur=2.5, amp=0.06):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    tone = 0.5 * (np.sin(2 * np.pi * freq * t) + np.sin(2 * np.pi * freq * 1.5 * t))
+    # bell-like decay
+    env = np.sin(np.linspace(0, np.pi, n)) ** 2
+    return tone * env * amp
 
-L_pad, R_pad = stereo_widen(pad + big + arp, 0, 14)
-L_low, R_low = stereo_widen(sub + sub2 + kick, 0, 0)
-L_air, R_air = stereo_widen(air + riser, 6, 0)
 
-L = L_pad + L_low + L_air
-R = R_pad + R_low + R_air
+breath_buf = np.zeros(N)
+place(breath_buf, 4.5, breath_pulse(330.0, dur=2.0, amp=0.05))
+place(breath_buf, 27.5, breath_pulse(440.0, dur=2.5, amp=0.07))
+place(breath_buf, 41.0, breath_pulse(660.0, dur=3.0, amp=0.05))
 
-# --- Send to a simple plate-reverb-like delay tail (multi-tap echo)
-def reverb(x, taps=((0.027, 0.5), (0.041, 0.4), (0.063, 0.35), (0.087, 0.28), (0.131, 0.22))):
+# ---------------------------------------------------------------------------
+# 8. Gentle tonic chime at intro and outro (single soft bell hits)
+# ---------------------------------------------------------------------------
+chime_buf = np.zeros(N)
+place(chime_buf, 0.5, bell_note(440.0, dur=2.5, amp=0.30))
+place(chime_buf, 1.4, bell_note(659.25, dur=2.5, amp=0.22))
+place(chime_buf, 43.0, bell_note(440.0, dur=4.0, amp=0.30))
+place(chime_buf, 44.0, bell_note(659.25, dur=4.0, amp=0.22))
+place(chime_buf, 45.0, bell_note(880.0, dur=4.0, amp=0.18))
+
+# ---------------------------------------------------------------------------
+# Mix
+# ---------------------------------------------------------------------------
+mix = sub + pad + big + taiko + bell + choir_buf + breath_buf + chime_buf
+mix = soft_clip(mix, drive=0.85)
+
+
+# ---------------------------------------------------------------------------
+# Stereo widen via Haas + light rotation per source
+# ---------------------------------------------------------------------------
+def shift(x, ms):
+    d = int(ms * SR / 1000)
+    out = np.zeros(N)
+    if d == 0:
+        return x.copy()
+    if d > 0:
+        out[d:] = x[:N - d]
+    else:
+        out[:N + d] = x[-d:]
+    return out
+
+
+# pad/choir slightly wider, bass center, bell slightly right
+L = (sub
+     + 0.95 * pad
+     + 0.95 * big
+     + taiko
+     + shift(bell, -8) * 0.95
+     + shift(choir_buf, -10) * 1.05
+     + breath_buf
+     + chime_buf)
+R = (sub
+     + 1.05 * shift(pad, 7) + 0.05 * pad
+     + 1.05 * shift(big, 6)
+     + taiko
+     + shift(bell, 0) * 1.05
+     + shift(choir_buf, 8) * 1.0
+     + shift(breath_buf, 6)
+     + chime_buf)
+
+
+# ---------------------------------------------------------------------------
+# Multi-tap "plate reverb" tail
+# ---------------------------------------------------------------------------
+def reverb(x, taps=((0.029, 0.45), (0.043, 0.36), (0.067, 0.30), (0.091, 0.24), (0.137, 0.18))):
     out = x.copy()
     for delay_s, gain in taps:
         d = int(delay_s * SR)
@@ -183,21 +273,23 @@ def reverb(x, taps=((0.027, 0.5), (0.041, 0.4), (0.063, 0.35), (0.087, 0.28), (0
         out += tail
     return out * 0.55 + x * 0.7
 
+
 L = reverb(L)
 R = reverb(R)
 
-# --- Normalize
+
+# ---------------------------------------------------------------------------
+# Final envelope, normalize, write WAV
+# ---------------------------------------------------------------------------
 peak = max(np.max(np.abs(L)), np.max(np.abs(R)))
 if peak > 0:
     L = L / peak * 0.92
     R = R / peak * 0.92
 
-# Final fade-out failsafe
-fade = env_ramp(0, 0.05, 0, 1) * env_ramp(48.5, 49, 1, 0)
+fade = env_ramp(0, 0.05, 0, 1) * env_ramp(48.6, 49, 1, 0)
 L *= fade
 R *= fade
 
-# --- Write WAV
 out_path = sys.argv[1] if len(sys.argv) > 1 else "track.wav"
 with wave.open(out_path, "wb") as f:
     f.setnchannels(2)
@@ -207,4 +299,5 @@ with wave.open(out_path, "wb") as f:
     interleaved[0::2] = (L * 32767).astype(np.int16)
     interleaved[1::2] = (R * 32767).astype(np.int16)
     f.writeframes(interleaved.tobytes())
+
 print(f"wrote {out_path} ({DUR:.1f}s, {os.path.getsize(out_path) // 1024} KB)")
