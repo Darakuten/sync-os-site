@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -10,7 +10,7 @@
 <meta property="og:type" content="website" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
   :root {
     --ink: #08090c;
@@ -29,6 +29,18 @@
     --sans: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
     --mono: "JetBrains Mono", ui-monospace, monospace;
   }
+
+  /* Japanese typography overrides */
+  html[lang="ja"] {
+    --serif: "Noto Serif JP", "Instrument Serif", "Times New Roman", serif;
+    --sans: "Noto Sans JP", "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  html[lang="ja"] body { line-height: 1.7; }
+  html[lang="ja"] .hero h1 { font-size: clamp(44px, 8vw, 120px); line-height: 1.05; letter-spacing: -0.01em; }
+  html[lang="ja"] .sec-head h2 { font-size: clamp(34px, 5vw, 68px); line-height: 1.15; }
+  html[lang="ja"] .manifesto p { font-size: clamp(26px, 3.6vw, 50px); line-height: 1.4; }
+  html[lang="ja"] .cta h2 { font-size: clamp(34px, 5vw, 76px); line-height: 1.1; }
+  html[lang="ja"] .vision-large { font-size: clamp(22px, 2.6vw, 36px); line-height: 1.5; }
 
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -113,6 +125,7 @@
     color: var(--paper-dim);
   }
   .nav-links a:hover { color: var(--paper); }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
   .nav-cta {
     font-family: var(--mono);
     font-size: 12px;
@@ -125,8 +138,41 @@
     transition: transform .2s ease;
   }
   .nav-cta:hover { transform: translateY(-1px); }
+
+  /* === Lang toggle === */
+  .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 3px;
+    background: rgba(243,237,224,0.04);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+  .lang-toggle button {
+    background: transparent;
+    border: 0;
+    color: var(--paper-dim);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: inherit;
+    letter-spacing: inherit;
+    transition: background .2s ease, color .2s ease;
+  }
+  .lang-toggle button:hover { color: var(--paper); }
+  .lang-toggle button.active {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
   @media (max-width: 820px) {
     .nav-links { display: none; }
+    .nav-inner { gap: 14px; padding: 14px 20px; }
+    .nav-cta { padding: 8px 12px; font-size: 11px; }
   }
 
   /* === Hero === */
@@ -949,14 +995,20 @@
       <a href="https://fastneura.com/" target="_blank" rel="noopener" class="brand-link" title="Visit FastNeura Inc.">/ FastNeura Inc. <span class="brand-arrow">↗</span></a>
     </span>
     <nav class="nav-links">
-      <a href="#product">Product</a>
-      <a href="#stack">Stack</a>
-      <a href="#states">States</a>
-      <a href="#architecture">Architecture</a>
-      <a href="#partners">Partners</a>
-      <a href="#vision">Vision</a>
+      <a href="#product" data-i18n="nav.product">Product</a>
+      <a href="#stack" data-i18n="nav.stack">Stack</a>
+      <a href="#states" data-i18n="nav.states">States</a>
+      <a href="#architecture" data-i18n="nav.architecture">Architecture</a>
+      <a href="#partners" data-i18n="nav.partners">Partners</a>
+      <a href="#vision" data-i18n="nav.vision">Vision</a>
     </nav>
-    <a class="nav-cta" href="#contact">Request access →</a>
+    <div class="nav-right">
+      <div class="lang-toggle" role="group" aria-label="Language toggle">
+        <button type="button" data-lang="en" class="active" aria-pressed="true">EN</button>
+        <button type="button" data-lang="ja" aria-pressed="false">JP</button>
+      </div>
+      <a class="nav-cta" href="#contact" data-i18n="nav.cta">Request access →</a>
+    </div>
   </div>
 </header>
 
@@ -964,42 +1016,42 @@
 
 <!-- HERO -->
 <section class="hero">
-  <span class="eyebrow">FastNeura Inc. — Bio-Adaptive AI Platform</span>
-  <h1>
+  <span class="eyebrow" data-i18n="hero.eyebrow">FastNeura Inc. — Bio-Adaptive AI Platform</span>
+  <h1 data-i18n="hero.h1">
     An <em>operating&nbsp;system</em><br/>
     for the <span class="strike">human</span> <em>nervous system.</em>
   </h1>
-  <p class="hero-sub">
+  <p class="hero-sub" data-i18n="hero.sub">
     Sync OS unifies multimodal biosignals — brain, heart, autonomic, motion, voice, environment —
     into a single real-time substrate. We close the loop between sensing, understanding, and intervention,
     so software can finally adapt to <em>you</em>, not the other way around.
   </p>
   <div class="hero-actions">
-    <a class="btn btn-primary" href="#demo">Watch the demo <span class="arrow">↗</span></a>
-    <a class="btn btn-ghost" href="#stack">See the stack</a>
+    <a class="btn btn-primary" href="#demo" data-i18n="hero.btn1">Watch the demo <span class="arrow">↗</span></a>
+    <a class="btn btn-ghost" href="#stack" data-i18n="hero.btn2">See the stack</a>
   </div>
 
   <div class="hero-meta">
-    <div><div class="k">Modalities</div><div class="v">8<em>+</em></div></div>
-    <div><div class="k">Loop latency</div><div class="v"><em>~120</em>ms</div></div>
-    <div><div class="k">States</div><div class="v">5</div></div>
-    <div><div class="k">Form factors</div><div class="v">Watch <em>·</em> Cap <em>·</em> Patch</div></div>
+    <div><div class="k" data-i18n="hero.meta.modalities">Modalities</div><div class="v">8<em>+</em></div></div>
+    <div><div class="k" data-i18n="hero.meta.latency">Loop latency</div><div class="v"><em>~120</em>ms</div></div>
+    <div><div class="k" data-i18n="hero.meta.states">States</div><div class="v">5</div></div>
+    <div><div class="k" data-i18n="hero.meta.form">Form factors</div><div class="v" data-i18n="hero.meta.form.v">Watch <em>·</em> Cap <em>·</em> Patch</div></div>
   </div>
 </section>
 
 <!-- TRUST STRIP -->
 <div class="strip">
-  <div class="strip-track">
-    <span>Built for clinicians</span>
-    <span>For high-performance teams</span>
-    <span>For neuroscience research</span>
-    <span>For human-AI interaction</span>
-    <span>For closed-loop wellness</span>
-    <span>Built for clinicians</span>
-    <span>For high-performance teams</span>
-    <span>For neuroscience research</span>
-    <span>For human-AI interaction</span>
-    <span>For closed-loop wellness</span>
+  <div class="strip-track" id="stripTrack">
+    <span data-i18n="strip.1">Built for clinicians</span>
+    <span data-i18n="strip.2">For high-performance teams</span>
+    <span data-i18n="strip.3">For neuroscience research</span>
+    <span data-i18n="strip.4">For human-AI interaction</span>
+    <span data-i18n="strip.5">For closed-loop wellness</span>
+    <span data-i18n="strip.1">Built for clinicians</span>
+    <span data-i18n="strip.2">For high-performance teams</span>
+    <span data-i18n="strip.3">For neuroscience research</span>
+    <span data-i18n="strip.4">For human-AI interaction</span>
+    <span data-i18n="strip.5">For closed-loop wellness</span>
   </div>
 </div>
 
@@ -1007,10 +1059,10 @@
 <section class="section" id="demo" style="padding-top:100px;">
   <div class="sec-head reveal">
     <div>
-      <span class="eyebrow">Live product · Sync OS v3</span>
-      <h2>One screen. <em>The whole human.</em></h2>
+      <span class="eyebrow" data-i18n="demo.eyebrow">Live product · Sync OS v3</span>
+      <h2 data-i18n="demo.h2">One screen. <em>The whole human.</em></h2>
     </div>
-    <p class="lede">
+    <p class="lede" data-i18n="demo.lede">
       A bio-centric console that maps every signal back to where it lives in the body, fuses
       them into five interpretable states, then closes the loop with multi-channel
       interventions — all on a single timeline.
@@ -1019,57 +1071,57 @@
 
   <div class="demo reveal" style="padding:0;">
     <div class="demo-frame">
-      <div class="demo-tag"><span class="dot"></span>Live capture · Sync OS v3</div>
+      <div class="demo-tag"><span class="dot"></span><span data-i18n="demo.tag">Live capture · Sync OS v3</span></div>
       <video
         id="demoVideo"
         src="./assets/sync_os_demo.mp4"
         poster="./assets/sync_os_demo_poster.jpg"
         autoplay muted loop playsinline preload="metadata"></video>
       <div class="demo-controls">
-        <button class="demo-ctrl" id="demoSound">Sound on</button>
-        <button class="demo-ctrl" id="demoFs">Fullscreen</button>
+        <button class="demo-ctrl" id="demoSound" data-i18n="demo.sound.on">Sound on</button>
+        <button class="demo-ctrl" id="demoFs" data-i18n="demo.fullscreen">Fullscreen</button>
       </div>
     </div>
 
     <div class="chapters" id="chapters">
       <button class="chapter active" data-t="0">
         <span class="ch-time">0:00</span>
-        <span class="ch-title">Intro</span>
-        <span class="ch-sub">A bio-adaptive AI platform.</span>
+        <span class="ch-title" data-i18n="chapter.intro.title">Intro</span>
+        <span class="ch-sub" data-i18n="chapter.intro.sub">A bio-adaptive AI platform.</span>
       </button>
       <button class="chapter" data-t="5">
         <span class="ch-time">0:05</span>
-        <span class="ch-title">Body Map</span>
-        <span class="ch-sub">Every signal mapped to the body it came from.</span>
+        <span class="ch-title" data-i18n="chapter.body.title">Body Map</span>
+        <span class="ch-sub" data-i18n="chapter.body.sub">Every signal mapped to the body it came from.</span>
       </button>
       <button class="chapter" data-t="9">
         <span class="ch-time">0:09</span>
-        <span class="ch-title">Integrated Console</span>
-        <span class="ch-sub">Devices, waveforms, states, interventions — one view.</span>
+        <span class="ch-title" data-i18n="chapter.console.title">Integrated Console</span>
+        <span class="ch-sub" data-i18n="chapter.console.sub">Devices, waveforms, states, interventions — one view.</span>
       </button>
       <button class="chapter" data-t="20">
         <span class="ch-time">0:20</span>
-        <span class="ch-title">Closed-Loop Intervention</span>
-        <span class="ch-sub">Apply Relax / Focus presets and watch state shift.</span>
+        <span class="ch-title" data-i18n="chapter.intervention.title">Closed-Loop Intervention</span>
+        <span class="ch-sub" data-i18n="chapter.intervention.sub">Apply Relax / Focus presets and watch state shift.</span>
       </button>
       <button class="chapter" data-t="29">
         <span class="ch-time">0:29</span>
-        <span class="ch-title">The Platform</span>
-        <span class="ch-sub">Sensing → Sync.OS Core → Actuation.</span>
+        <span class="ch-title" data-i18n="chapter.platform.title">The Platform</span>
+        <span class="ch-sub" data-i18n="chapter.platform.sub">Sensing → Sync.OS Core → Actuation.</span>
       </button>
       <button class="chapter" data-t="42">
         <span class="ch-time">0:42</span>
-        <span class="ch-title">Outro</span>
-        <span class="ch-sub">FastNeura Inc. / Sync.</span>
+        <span class="ch-title" data-i18n="chapter.outro.title">Outro</span>
+        <span class="ch-sub" data-i18n="chapter.outro.sub">FastNeura Inc. / Sync.</span>
       </button>
     </div>
   </div>
 
   <div class="demo-callouts reveal">
     <div class="callout">
-      <span class="co-num">01 · Body-centric UI</span>
-      <h4>The body is the <em>primary axis,</em> not the device.</h4>
-      <p>
+      <span class="co-num" data-i18n="callout.1.num">01 · Body-centric UI</span>
+      <h4 data-i18n="callout.1.h4">The body is the <em>primary axis,</em> not the device.</h4>
+      <p data-i18n="callout.1.p">
         Existing biosignal tools force you to think in channels and probes. Sync OS inverts it:
         a single anatomical canvas with each modality docked to where it physically lives —
         EEG at the scalp, ECG at the chest, PPG at the wrist, EDA at the palm. Streams flow
@@ -1077,9 +1129,9 @@
       </p>
     </div>
     <div class="callout">
-      <span class="co-num">02 · Real-time fusion</span>
-      <h4>Eight modalities reduced to <em>five states.</em></h4>
-      <p>
+      <span class="co-num" data-i18n="callout.2.num">02 · Real-time fusion</span>
+      <h4 data-i18n="callout.2.h4">Eight modalities reduced to <em>five states.</em></h4>
+      <p data-i18n="callout.2.p">
         The Sync.OS core continuously fuses raw signals into five interpretable scores —
         <em>stress · emotion · fatigue · attention · cogload</em>. The dashboard shows
         these states updating live, so any product or clinician on top of Sync OS reasons
@@ -1087,9 +1139,9 @@
       </p>
     </div>
     <div class="callout">
-      <span class="co-num">03 · Closed-loop intervention</span>
-      <h4>Sensing only matters if you <em>act on it.</em></h4>
-      <p>
+      <span class="co-num" data-i18n="callout.3.num">03 · Closed-loop intervention</span>
+      <h4 data-i18n="callout.3.h4">Sensing only matters if you <em>act on it.</em></h4>
+      <p data-i18n="callout.3.p">
         Intervention is a first-class output. Trigger Relax / Focus presets, drive haptic
         watches, audio entrainment, light, and agent calls — then watch the states
         shift on the same screen. Sync OS is the substrate that makes the loop short
@@ -1102,13 +1154,13 @@
 <!-- MANIFESTO -->
 <section class="manifesto reveal">
   <div class="manifesto-inner">
-    <p>
+    <p data-i18n="manifesto.text">
       Computers learned to <em>see</em>. They learned to <em>speak</em>.
       They never learned to <em>feel us back</em>. <br/>
       Sync&nbsp;OS is how that changes — a substrate where every signal a body emits
       becomes something software can listen to, learn from, and respond to.
     </p>
-    <div class="signoff">— FastNeura Inc., 2026</div>
+    <div class="signoff" data-i18n="manifesto.signoff">— FastNeura Inc., 2026</div>
   </div>
 </section>
 
@@ -1116,10 +1168,10 @@
 <section class="section" id="stack">
   <div class="sec-head reveal">
     <div>
-      <span class="eyebrow">The Stack</span>
-      <h2>Sense. <em>Sync.</em> Act.</h2>
+      <span class="eyebrow" data-i18n="stack.eyebrow">The Stack</span>
+      <h2 data-i18n="stack.h2">Sense. <em>Sync.</em> Act.</h2>
     </div>
-    <p class="lede">
+    <p class="lede" data-i18n="stack.lede">
       Three layers, one continuous loop. From raw biosignals to model inference to
       multi-channel intervention — at the speed of your nervous system.
     </p>
@@ -1127,9 +1179,9 @@
 
   <div class="stack-grid reveal" id="product">
     <div class="stack-col">
-      <div class="num">01 / SENSING</div>
-      <h3><span class="glyph">◐</span>Read the body.</h3>
-      <p>Wearables, caps, patches, watches and ambient sensors stream into one normalized timeline. Every signal stays mapped to its anatomical origin.</p>
+      <div class="num" data-i18n="stack.sense.num">01 / SENSING</div>
+      <h3 data-i18n="stack.sense.h3"><span class="glyph">◐</span>Read the body.</h3>
+      <p data-i18n="stack.sense.p">Wearables, caps, patches, watches and ambient sensors stream into one normalized timeline. Every signal stays mapped to its anatomical origin.</p>
       <div class="chips">
         <span class="chip">EEG</span>
         <span class="chip">ECG</span>
@@ -1137,33 +1189,33 @@
         <span class="chip">EDA</span>
         <span class="chip">EMG</span>
         <span class="chip">IMU</span>
-        <span class="chip">Voice</span>
-        <span class="chip">Env</span>
+        <span class="chip" data-i18n="stack.chip.voice">Voice</span>
+        <span class="chip" data-i18n="stack.chip.env">Env</span>
       </div>
     </div>
 
     <div class="stack-col">
-      <div class="num">02 / SYNC CORE</div>
-      <h3><span class="glyph">✦</span>Understand the state.</h3>
-      <p>Multimodal foundation models fuse signals into five interpretable states of the human — updated continuously, on-device when needed.</p>
+      <div class="num" data-i18n="stack.sync.num">02 / SYNC CORE</div>
+      <h3 data-i18n="stack.sync.h3"><span class="glyph">✦</span>Understand the state.</h3>
+      <p data-i18n="stack.sync.p">Multimodal foundation models fuse signals into five interpretable states of the human — updated continuously, on-device when needed.</p>
       <div class="chips">
-        <span class="chip accent">Multimodal Fusion</span>
-        <span class="chip accent">State Inference</span>
-        <span class="chip accent">Personalization</span>
-        <span class="chip accent">Edge + Cloud</span>
+        <span class="chip accent" data-i18n="stack.chip.fusion">Multimodal Fusion</span>
+        <span class="chip accent" data-i18n="stack.chip.inference">State Inference</span>
+        <span class="chip accent" data-i18n="stack.chip.personalization">Personalization</span>
+        <span class="chip accent" data-i18n="stack.chip.edge">Edge + Cloud</span>
       </div>
     </div>
 
     <div class="stack-col">
-      <div class="num">03 / ACTUATION</div>
-      <h3><span class="glyph">◑</span>Close the loop.</h3>
-      <p>Intervention isn't an afterthought — it's a first-class output. Drive haptics, audio, light, agents, and clinical channels with verified safety envelopes.</p>
+      <div class="num" data-i18n="stack.act.num">03 / ACTUATION</div>
+      <h3 data-i18n="stack.act.h3"><span class="glyph">◑</span>Close the loop.</h3>
+      <p data-i18n="stack.act.p">Intervention isn't an afterthought — it's a first-class output. Drive haptics, audio, light, agents, and clinical channels with verified safety envelopes.</p>
       <div class="chips">
-        <span class="chip signal">Haptic</span>
-        <span class="chip signal">Audio</span>
-        <span class="chip signal">Light</span>
-        <span class="chip signal">Agent</span>
-        <span class="chip signal">Stim</span>
+        <span class="chip signal" data-i18n="stack.chip.haptic">Haptic</span>
+        <span class="chip signal" data-i18n="stack.chip.audio">Audio</span>
+        <span class="chip signal" data-i18n="stack.chip.light">Light</span>
+        <span class="chip signal" data-i18n="stack.chip.agent">Agent</span>
+        <span class="chip signal" data-i18n="stack.chip.stim">Stim</span>
       </div>
     </div>
   </div>
@@ -1173,10 +1225,10 @@
 <section class="section" id="states">
   <div class="sec-head reveal">
     <div>
-      <span class="eyebrow">Five states</span>
-      <h2>The vocabulary of <em>state.</em></h2>
+      <span class="eyebrow" data-i18n="states.eyebrow">Five states</span>
+      <h2 data-i18n="states.h2">The vocabulary of <em>state.</em></h2>
     </div>
-    <p class="lede">
+    <p class="lede" data-i18n="states.lede">
       Sync OS reduces dozens of raw biosignals into the same five interpretable scores
       surfaced in the live console — the smallest vocabulary that lets software
       meaningfully respond to a human in the loop.
@@ -1186,37 +1238,37 @@
   <div class="constructs reveal">
     <div class="construct" style="--accent-c:#ff8a4c;">
       <div class="gauge" style="background: radial-gradient(circle, rgba(255,138,76,0.20), transparent 65%);"></div>
-      <div class="label">01 · Stress</div>
+      <div class="label" data-i18n="states.stress.label">01 · Stress</div>
       <div class="name"><b>STRESS</b></div>
-      <div class="desc">Acute autonomic load. Derived from LF/HF ratio, electrodermal response and heart rate.</div>
+      <div class="desc" data-i18n="states.stress.desc">Acute autonomic load. Derived from LF/HF ratio, electrodermal response and heart rate.</div>
       <div class="score"><span>0.34</span><div class="bar"><i data-w="34" style="background:linear-gradient(90deg,#ff8a4c,#ffb547)"></i></div></div>
     </div>
     <div class="construct" style="--accent-c:#ff4e7d;">
       <div class="gauge" style="background: radial-gradient(circle, rgba(255,78,125,0.20), transparent 65%);"></div>
-      <div class="label">02 · Emotion</div>
+      <div class="label" data-i18n="states.emotion.label">02 · Emotion</div>
       <div class="name"><b>EMOTION</b></div>
-      <div class="desc">Affective valence. Inferred from frontal alpha asymmetry and blink dynamics.</div>
+      <div class="desc" data-i18n="states.emotion.desc">Affective valence. Inferred from frontal alpha asymmetry and blink dynamics.</div>
       <div class="score"><span>0.62</span><div class="bar"><i data-w="62" style="background:linear-gradient(90deg,#ff4e7d,#ff8a4c)"></i></div></div>
     </div>
     <div class="construct" style="--accent-c:#ff6b4a;">
       <div class="gauge" style="background: radial-gradient(circle, rgba(255,107,74,0.20), transparent 65%);"></div>
-      <div class="label">03 · Fatigue</div>
+      <div class="label" data-i18n="states.fatigue.label">03 · Fatigue</div>
       <div class="name"><b>FATIGUE</b></div>
-      <div class="desc">Mental fatigue. Combines alpha/beta ratio, respiration rate and tonic heart rate.</div>
+      <div class="desc" data-i18n="states.fatigue.desc">Mental fatigue. Combines alpha/beta ratio, respiration rate and tonic heart rate.</div>
       <div class="score"><span>0.28</span><div class="bar"><i data-w="28" style="background:linear-gradient(90deg,#ff6b4a,#ffb547)"></i></div></div>
     </div>
     <div class="construct" style="--accent-c:#7df9ff;">
       <div class="gauge"></div>
-      <div class="label">04 · Attention</div>
+      <div class="label" data-i18n="states.attention.label">04 · Attention</div>
       <div class="name"><b>ATTENTION</b></div>
-      <div class="desc">Focused engagement. Driven by beta power, alpha/beta ratio and blink suppression.</div>
+      <div class="desc" data-i18n="states.attention.desc">Focused engagement. Driven by beta power, alpha/beta ratio and blink suppression.</div>
       <div class="score"><span>0.81</span><div class="bar"><i data-w="81" style="background:linear-gradient(90deg,#7df9ff,#9bffd4)"></i></div></div>
     </div>
     <div class="construct" style="--accent-c:#b4e23f;">
       <div class="gauge" style="background: radial-gradient(circle, rgba(180,226,63,0.18), transparent 65%);"></div>
-      <div class="label">05 · CogLoad</div>
+      <div class="label" data-i18n="states.cogload.label">05 · CogLoad</div>
       <div class="name"><b>COGLOAD</b></div>
-      <div class="desc">Cognitive load (n-back equivalent). Beta activity, heart rate and LF/HF together.</div>
+      <div class="desc" data-i18n="states.cogload.desc">Cognitive load (n-back equivalent). Beta activity, heart rate and LF/HF together.</div>
       <div class="score"><span>0.46</span><div class="bar"><i data-w="46" style="background:linear-gradient(90deg,#b4e23f,#7df9ff)"></i></div></div>
     </div>
   </div>
@@ -1226,10 +1278,10 @@
 <section class="section" id="architecture">
   <div class="sec-head reveal">
     <div>
-      <span class="eyebrow">Architecture</span>
-      <h2>Built as <em>infrastructure,</em> not an app.</h2>
+      <span class="eyebrow" data-i18n="arch.eyebrow">Architecture</span>
+      <h2 data-i18n="arch.h2">Built as <em>infrastructure,</em> not an app.</h2>
     </div>
-    <p class="lede">
+    <p class="lede" data-i18n="arch.lede">
       Sync OS sits between hardware and intelligence — a clean substrate for any
       product that needs to be human-aware.
     </p>
@@ -1238,27 +1290,27 @@
   <div class="arch reveal">
     <div class="arch-grid">
       <div class="arch-col">
-        <h4>Inputs</h4>
+        <h4 data-i18n="arch.inputs">Inputs</h4>
         <ul>
           <li>EEG · ECG · PPG</li>
           <li>EDA · Temp</li>
-          <li>IMU · Motion</li>
-          <li>Voice · Face</li>
-          <li>Environment</li>
+          <li data-i18n="arch.inputs.imu">IMU · Motion</li>
+          <li data-i18n="arch.inputs.voice">Voice · Face</li>
+          <li data-i18n="arch.inputs.env">Environment</li>
         </ul>
       </div>
       <div class="arch-core">
         <div class="name">Sync.OS Core</div>
-        <div class="tag">Multimodal Fusion · State Inference · Policy</div>
+        <div class="tag" data-i18n="arch.core.tag">Multimodal Fusion · State Inference · Policy</div>
       </div>
       <div class="arch-col" style="text-align:right;">
-        <h4>Outputs</h4>
+        <h4 data-i18n="arch.outputs">Outputs</h4>
         <ul>
-          <li>Haptic feedback</li>
-          <li>Audio · Light</li>
-          <li>Agent calls</li>
-          <li>Clinical alerts</li>
-          <li>Closed-loop stim</li>
+          <li data-i18n="arch.outputs.haptic">Haptic feedback</li>
+          <li data-i18n="arch.outputs.audio">Audio · Light</li>
+          <li data-i18n="arch.outputs.agent">Agent calls</li>
+          <li data-i18n="arch.outputs.clinical">Clinical alerts</li>
+          <li data-i18n="arch.outputs.stim">Closed-loop stim</li>
         </ul>
       </div>
     </div>
@@ -1269,10 +1321,10 @@
 <section class="section">
   <div class="sec-head reveal">
     <div>
-      <span class="eyebrow">Where it ships</span>
-      <h2>One platform. <em>Many surfaces.</em></h2>
+      <span class="eyebrow" data-i18n="uses.eyebrow">Where it ships</span>
+      <h2 data-i18n="uses.h2">One platform. <em>Many surfaces.</em></h2>
     </div>
-    <p class="lede">
+    <p class="lede" data-i18n="uses.lede">
       Sync OS is the connective tissue under clinical tools, performance products,
       research stacks, and the next generation of bio-aware consumer software.
     </p>
@@ -1282,40 +1334,40 @@
     <div class="use">
       <div class="icon">✚</div>
       <div>
-        <h3>Clinical & digital therapeutics</h3>
-        <p>Continuous monitoring, biomarker discovery, and closed-loop interventions for mental health, neurology, and rehab — with auditable signal lineage.</p>
+        <h3 data-i18n="use.clinical.h3">Clinical & digital therapeutics</h3>
+        <p data-i18n="use.clinical.p">Continuous monitoring, biomarker discovery, and closed-loop interventions for mental health, neurology, and rehab — with auditable signal lineage.</p>
         <div class="tags">
-          <span class="chip">EHR-ready</span><span class="chip accent">Biomarkers</span><span class="chip signal">Closed-loop</span>
+          <span class="chip" data-i18n="tag.ehr">EHR-ready</span><span class="chip accent" data-i18n="tag.biomarkers">Biomarkers</span><span class="chip signal" data-i18n="tag.closedloop">Closed-loop</span>
         </div>
       </div>
     </div>
     <div class="use">
       <div class="icon">◎</div>
       <div>
-        <h3>Performance & high-stakes work</h3>
-        <p>Athletes, surgeons, operators, pilots. Real-time state tracking with discreet haptic and audio nudges — without breaking the task.</p>
+        <h3 data-i18n="use.performance.h3">Performance & high-stakes work</h3>
+        <p data-i18n="use.performance.p">Athletes, surgeons, operators, pilots. Real-time state tracking with discreet haptic and audio nudges — without breaking the task.</p>
         <div class="tags">
-          <span class="chip">Wearables</span><span class="chip accent">Edge inference</span><span class="chip signal">Haptics</span>
+          <span class="chip" data-i18n="tag.wearables">Wearables</span><span class="chip accent" data-i18n="tag.edge">Edge inference</span><span class="chip signal" data-i18n="tag.haptics">Haptics</span>
         </div>
       </div>
     </div>
     <div class="use">
       <div class="icon">∿</div>
       <div>
-        <h3>Neuroscience & HCI research</h3>
-        <p>One pipeline for synchronized multimodal capture, annotation, and model training — replacing a graveyard of bespoke MATLAB scripts.</p>
+        <h3 data-i18n="use.research.h3">Neuroscience & HCI research</h3>
+        <p data-i18n="use.research.p">One pipeline for synchronized multimodal capture, annotation, and model training — replacing a graveyard of bespoke MATLAB scripts.</p>
         <div class="tags">
-          <span class="chip">MNE / BIDS</span><span class="chip accent">Reproducible</span><span class="chip">Open formats</span>
+          <span class="chip">MNE / BIDS</span><span class="chip accent" data-i18n="tag.reproducible">Reproducible</span><span class="chip" data-i18n="tag.openformats">Open formats</span>
         </div>
       </div>
     </div>
     <div class="use">
       <div class="icon">♥</div>
       <div>
-        <h3>Bio-aware consumer agents</h3>
-        <p>Let your AI know when to push, when to back off, and when to stop talking. The first SDK for emotionally and physiologically aware agents.</p>
+        <h3 data-i18n="use.consumer.h3">Bio-aware consumer agents</h3>
+        <p data-i18n="use.consumer.p">Let your AI know when to push, when to back off, and when to stop talking. The first SDK for emotionally and physiologically aware agents.</p>
         <div class="tags">
-          <span class="chip">Agent SDK</span><span class="chip accent">On-device</span><span class="chip signal">Privacy-first</span>
+          <span class="chip" data-i18n="tag.agentsdk">Agent SDK</span><span class="chip accent" data-i18n="tag.ondevice">On-device</span><span class="chip signal" data-i18n="tag.privacy">Privacy-first</span>
         </div>
       </div>
     </div>
@@ -1326,10 +1378,10 @@
 <section class="section" id="partners" style="padding-top:40px; padding-bottom:40px;">
   <div class="sec-head reveal">
     <div>
-      <span class="eyebrow">Partnerships & research</span>
-      <h2>Built with the people <em>shipping the future.</em></h2>
+      <span class="eyebrow" data-i18n="partners.eyebrow">Partnerships & research</span>
+      <h2 data-i18n="partners.h2">Built with the people <em>shipping the future.</em></h2>
     </div>
-    <p class="lede">
+    <p class="lede" data-i18n="partners.lede">
       Sync OS is co-developed alongside hospitals, research labs and industry partners
       across Japan, the US and the EU.
     </p>
@@ -1337,34 +1389,34 @@
 
   <div class="partners reveal">
     <div class="partner-cell">
-      <span class="ptag">Industry partnerships</span>
+      <span class="ptag" data-i18n="partners.industry.tag">Industry partnerships</span>
       <div class="pnum"><em>20</em><sup>+</sup></div>
-      <h3>Companies <em>partnering</em> with Sync OS.</h3>
-      <p>
+      <h3 data-i18n="partners.industry.h3">Companies <em>partnering</em> with Sync OS.</h3>
+      <p data-i18n="partners.industry.p">
         Medical device makers, wearable OEMs, automotive HMI teams, performance and
         wellness brands working with us to shape the bio-adaptive layer.
       </p>
       <div class="partner-pills">
-        <span class="pill">MedTech</span>
-        <span class="pill">Wearables</span>
-        <span class="pill">Automotive HMI</span>
-        <span class="pill">Performance</span>
-        <span class="pill">Consumer AI</span>
+        <span class="pill" data-i18n="pill.medtech">MedTech</span>
+        <span class="pill" data-i18n="pill.wearables">Wearables</span>
+        <span class="pill" data-i18n="pill.automotive">Automotive HMI</span>
+        <span class="pill" data-i18n="pill.performance">Performance</span>
+        <span class="pill" data-i18n="pill.consumerai">Consumer AI</span>
       </div>
     </div>
     <div class="partner-cell">
-      <span class="ptag">Research collaborations</span>
+      <span class="ptag" data-i18n="partners.research.tag">Research collaborations</span>
       <div class="pnum"><em>4</em></div>
-      <h3>Top-tier <em>research institutes.</em></h3>
-      <p>
+      <h3 data-i18n="partners.research.h3">Top-tier <em>research institutes.</em></h3>
+      <p data-i18n="partners.research.p">
         Joint research and clinical studies with leading neuroscience, psychiatry and
         human-factors labs — the source of our datasets, biomarkers and ground truth.
       </p>
       <div class="partner-pills">
-        <span class="pill">Neuroscience</span>
-        <span class="pill">Psychiatry</span>
-        <span class="pill">Human factors</span>
-        <span class="pill">Sports science</span>
+        <span class="pill" data-i18n="pill.neuroscience">Neuroscience</span>
+        <span class="pill" data-i18n="pill.psychiatry">Psychiatry</span>
+        <span class="pill" data-i18n="pill.humanfactors">Human factors</span>
+        <span class="pill" data-i18n="pill.sports">Sports science</span>
       </div>
     </div>
   </div>
@@ -1373,10 +1425,10 @@
 <!-- NUMBERS -->
 <section class="section" style="padding-top:40px;">
   <div class="numbers reveal">
-    <div><div class="v"><em>8+</em></div><div class="k">Biosignal modalities</div></div>
-    <div><div class="v">~120<sup>ms</sup></div><div class="k">Sense → act loop</div></div>
-    <div><div class="v"><em>5</em></div><div class="k">State dimensions</div></div>
-    <div><div class="v">100<sup>%</sup></div><div class="k">On-device option</div></div>
+    <div><div class="v"><em>8+</em></div><div class="k" data-i18n="numbers.modalities">Biosignal modalities</div></div>
+    <div><div class="v">~120<sup>ms</sup></div><div class="k" data-i18n="numbers.loop">Sense → act loop</div></div>
+    <div><div class="v"><em>5</em></div><div class="k" data-i18n="numbers.dimensions">State dimensions</div></div>
+    <div><div class="v">100<sup>%</sup></div><div class="k" data-i18n="numbers.ondevice">On-device option</div></div>
   </div>
 </section>
 
@@ -1384,44 +1436,44 @@
 <section class="section" id="vision">
   <div class="sec-head reveal">
     <div>
-      <span class="eyebrow">Why now</span>
-      <h2>The next interface isn't a screen. It's <em>you.</em></h2>
+      <span class="eyebrow" data-i18n="vision.eyebrow">Why now</span>
+      <h2 data-i18n="vision.h2">The next interface isn't a screen. It's <em>you.</em></h2>
     </div>
   </div>
 
   <div class="vision reveal">
-    <div class="vision-large">
+    <div class="vision-large" data-i18n="vision.large">
       For 70 years computing has asked humans to translate themselves into clicks, taps, and prompts.
       Sensors are now small enough, cheap enough, and accurate enough that the translation can finally
       go the other way. <em>Sync OS is the substrate for that flip.</em>
     </div>
     <div class="vision-side">
-      <h4>About FastNeura Inc.</h4>
-      <p>
+      <h4 data-i18n="vision.about.h4">About FastNeura Inc.</h4>
+      <p data-i18n="vision.about.p">
         We are a Tokyo-born deep-tech company building the bio-adaptive layer for the AI era.
         Our team brings together neuroscientists, signal engineers, and product builders shipping
         production systems for hospitals, research labs, and consumer products.
         <br/><br/>
         <a href="https://fastneura.com/" target="_blank" rel="noopener" class="inline-link">
-          Visit fastneura.com <span style="color:var(--accent);">↗</span>
+          <span data-i18n="vision.link">Visit fastneura.com</span> <span style="color:var(--accent);">↗</span>
         </a>
       </p>
-      <h4>Backed by</h4>
-      <p>Selected research partners and strategic investors across Japan, the US, and the EU.</p>
+      <h4 data-i18n="vision.backed.h4">Backed by</h4>
+      <p data-i18n="vision.backed.p">Selected research partners and strategic investors across Japan, the US, and the EU.</p>
     </div>
   </div>
 </section>
 
 <!-- CTA -->
 <section class="cta reveal" id="contact">
-  <h2>Build with <em>Sync OS.</em></h2>
-  <p>
+  <h2 data-i18n="cta.h2">Build with <em>Sync OS.</em></h2>
+  <p data-i18n="cta.p">
     We're onboarding a small group of clinical, research, and product partners ahead of the public SDK.
     If you're building something that should listen to a human, we'd love to hear from you.
   </p>
   <div class="cta-actions">
-    <a class="btn btn-primary" href="mailto:info@fastneura.com?subject=Sync%20OS%20%E2%80%94%20Partner%20inquiry">Request access <span class="arrow">↗</span></a>
-    <a class="btn btn-ghost" href="#demo">Re-watch the demo</a>
+    <a class="btn btn-primary" href="mailto:info@fastneura.com?subject=Sync%20OS%20%E2%80%94%20Partner%20inquiry" data-i18n="cta.btn1">Request access <span class="arrow">↗</span></a>
+    <a class="btn btn-ghost" href="#demo" data-i18n="cta.btn2">Re-watch the demo</a>
   </div>
 </section>
 
@@ -1429,19 +1481,411 @@
 
 <footer>
   <div class="foot-inner">
-    <div>© <a href="https://fastneura.com/" target="_blank" rel="noopener" style="color:inherit; text-decoration:none; border-bottom:1px solid var(--line); padding-bottom:1px;">FastNeura Inc.</a> — Sync.OS</div>
-    <div>Tokyo · Built for the bio-adaptive AI era</div>
+    <div data-i18n="footer.copy">© <a href="https://fastneura.com/" target="_blank" rel="noopener" style="color:inherit; text-decoration:none; border-bottom:1px solid var(--line); padding-bottom:1px;">FastNeura Inc.</a> — Sync.OS</div>
+    <div data-i18n="footer.tokyo">Tokyo · Built for the bio-adaptive AI era</div>
     <div><a href="mailto:info@fastneura.com" style="color:inherit; text-decoration:none;">info@fastneura.com</a></div>
   </div>
 </footer>
 
 <script>
-  // Reveal on scroll
+  // === i18n dictionary ===
+  const I18N = {
+    en: {
+      "nav.product": "Product",
+      "nav.stack": "Stack",
+      "nav.states": "States",
+      "nav.architecture": "Architecture",
+      "nav.partners": "Partners",
+      "nav.vision": "Vision",
+      "nav.cta": "Request access →",
+
+      "hero.eyebrow": "FastNeura Inc. — Bio-Adaptive AI Platform",
+      "hero.h1": 'An <em>operating&nbsp;system</em><br/>for the <span class="strike">human</span> <em>nervous system.</em>',
+      "hero.sub": "Sync OS unifies multimodal biosignals — brain, heart, autonomic, motion, voice, environment — into a single real-time substrate. We close the loop between sensing, understanding, and intervention, so software can finally adapt to <em>you</em>, not the other way around.",
+      "hero.btn1": 'Watch the demo <span class="arrow">↗</span>',
+      "hero.btn2": "See the stack",
+      "hero.meta.modalities": "Modalities",
+      "hero.meta.latency": "Loop latency",
+      "hero.meta.states": "States",
+      "hero.meta.form": "Form factors",
+      "hero.meta.form.v": "Watch <em>·</em> Cap <em>·</em> Patch",
+
+      "strip.1": "Built for clinicians",
+      "strip.2": "For high-performance teams",
+      "strip.3": "For neuroscience research",
+      "strip.4": "For human-AI interaction",
+      "strip.5": "For closed-loop wellness",
+
+      "demo.eyebrow": "Live product · Sync OS v3",
+      "demo.h2": "One screen. <em>The whole human.</em>",
+      "demo.lede": "A bio-centric console that maps every signal back to where it lives in the body, fuses them into five interpretable states, then closes the loop with multi-channel interventions — all on a single timeline.",
+      "demo.tag": "Live capture · Sync OS v3",
+      "demo.sound.on": "Sound on",
+      "demo.sound.off": "Sound off",
+      "demo.fullscreen": "Fullscreen",
+
+      "chapter.intro.title": "Intro",
+      "chapter.intro.sub": "A bio-adaptive AI platform.",
+      "chapter.body.title": "Body Map",
+      "chapter.body.sub": "Every signal mapped to the body it came from.",
+      "chapter.console.title": "Integrated Console",
+      "chapter.console.sub": "Devices, waveforms, states, interventions — one view.",
+      "chapter.intervention.title": "Closed-Loop Intervention",
+      "chapter.intervention.sub": "Apply Relax / Focus presets and watch state shift.",
+      "chapter.platform.title": "The Platform",
+      "chapter.platform.sub": "Sensing → Sync.OS Core → Actuation.",
+      "chapter.outro.title": "Outro",
+      "chapter.outro.sub": "FastNeura Inc. / Sync.",
+
+      "callout.1.num": "01 · Body-centric UI",
+      "callout.1.h4": "The body is the <em>primary axis,</em> not the device.",
+      "callout.1.p": "Existing biosignal tools force you to think in channels and probes. Sync OS inverts it: a single anatomical canvas with each modality docked to where it physically lives — EEG at the scalp, ECG at the chest, PPG at the wrist, EDA at the palm. Streams flow out from the body, not into a spreadsheet.",
+      "callout.2.num": "02 · Real-time fusion",
+      "callout.2.h4": "Eight modalities reduced to <em>five states.</em>",
+      "callout.2.p": "The Sync.OS core continuously fuses raw signals into five interpretable scores — <em>stress · emotion · fatigue · attention · cogload</em>. The dashboard shows these states updating live, so any product or clinician on top of Sync OS reasons over the same shared vocabulary.",
+      "callout.3.num": "03 · Closed-loop intervention",
+      "callout.3.h4": "Sensing only matters if you <em>act on it.</em>",
+      "callout.3.p": "Intervention is a first-class output. Trigger Relax / Focus presets, drive haptic watches, audio entrainment, light, and agent calls — then watch the states shift on the same screen. Sync OS is the substrate that makes the loop short enough to feel.",
+
+      "manifesto.text": "Computers learned to <em>see</em>. They learned to <em>speak</em>. They never learned to <em>feel us back</em>. <br/>Sync&nbsp;OS is how that changes — a substrate where every signal a body emits becomes something software can listen to, learn from, and respond to.",
+      "manifesto.signoff": "— FastNeura Inc., 2026",
+
+      "stack.eyebrow": "The Stack",
+      "stack.h2": "Sense. <em>Sync.</em> Act.",
+      "stack.lede": "Three layers, one continuous loop. From raw biosignals to model inference to multi-channel intervention — at the speed of your nervous system.",
+      "stack.sense.num": "01 / SENSING",
+      "stack.sense.h3": '<span class="glyph">◐</span>Read the body.',
+      "stack.sense.p": "Wearables, caps, patches, watches and ambient sensors stream into one normalized timeline. Every signal stays mapped to its anatomical origin.",
+      "stack.sync.num": "02 / SYNC CORE",
+      "stack.sync.h3": '<span class="glyph">✦</span>Understand the state.',
+      "stack.sync.p": "Multimodal foundation models fuse signals into five interpretable states of the human — updated continuously, on-device when needed.",
+      "stack.act.num": "03 / ACTUATION",
+      "stack.act.h3": '<span class="glyph">◑</span>Close the loop.',
+      "stack.act.p": "Intervention isn't an afterthought — it's a first-class output. Drive haptics, audio, light, agents, and clinical channels with verified safety envelopes.",
+      "stack.chip.voice": "Voice",
+      "stack.chip.env": "Env",
+      "stack.chip.fusion": "Multimodal Fusion",
+      "stack.chip.inference": "State Inference",
+      "stack.chip.personalization": "Personalization",
+      "stack.chip.edge": "Edge + Cloud",
+      "stack.chip.haptic": "Haptic",
+      "stack.chip.audio": "Audio",
+      "stack.chip.light": "Light",
+      "stack.chip.agent": "Agent",
+      "stack.chip.stim": "Stim",
+
+      "states.eyebrow": "Five states",
+      "states.h2": "The vocabulary of <em>state.</em>",
+      "states.lede": "Sync OS reduces dozens of raw biosignals into the same five interpretable scores surfaced in the live console — the smallest vocabulary that lets software meaningfully respond to a human in the loop.",
+      "states.stress.label": "01 · Stress",
+      "states.stress.desc": "Acute autonomic load. Derived from LF/HF ratio, electrodermal response and heart rate.",
+      "states.emotion.label": "02 · Emotion",
+      "states.emotion.desc": "Affective valence. Inferred from frontal alpha asymmetry and blink dynamics.",
+      "states.fatigue.label": "03 · Fatigue",
+      "states.fatigue.desc": "Mental fatigue. Combines alpha/beta ratio, respiration rate and tonic heart rate.",
+      "states.attention.label": "04 · Attention",
+      "states.attention.desc": "Focused engagement. Driven by beta power, alpha/beta ratio and blink suppression.",
+      "states.cogload.label": "05 · CogLoad",
+      "states.cogload.desc": "Cognitive load (n-back equivalent). Beta activity, heart rate and LF/HF together.",
+
+      "arch.eyebrow": "Architecture",
+      "arch.h2": "Built as <em>infrastructure,</em> not an app.",
+      "arch.lede": "Sync OS sits between hardware and intelligence — a clean substrate for any product that needs to be human-aware.",
+      "arch.inputs": "Inputs",
+      "arch.inputs.imu": "IMU · Motion",
+      "arch.inputs.voice": "Voice · Face",
+      "arch.inputs.env": "Environment",
+      "arch.outputs": "Outputs",
+      "arch.outputs.haptic": "Haptic feedback",
+      "arch.outputs.audio": "Audio · Light",
+      "arch.outputs.agent": "Agent calls",
+      "arch.outputs.clinical": "Clinical alerts",
+      "arch.outputs.stim": "Closed-loop stim",
+      "arch.core.tag": "Multimodal Fusion · State Inference · Policy",
+
+      "uses.eyebrow": "Where it ships",
+      "uses.h2": "One platform. <em>Many surfaces.</em>",
+      "uses.lede": "Sync OS is the connective tissue under clinical tools, performance products, research stacks, and the next generation of bio-aware consumer software.",
+      "use.clinical.h3": "Clinical & digital therapeutics",
+      "use.clinical.p": "Continuous monitoring, biomarker discovery, and closed-loop interventions for mental health, neurology, and rehab — with auditable signal lineage.",
+      "use.performance.h3": "Performance & high-stakes work",
+      "use.performance.p": "Athletes, surgeons, operators, pilots. Real-time state tracking with discreet haptic and audio nudges — without breaking the task.",
+      "use.research.h3": "Neuroscience & HCI research",
+      "use.research.p": "One pipeline for synchronized multimodal capture, annotation, and model training — replacing a graveyard of bespoke MATLAB scripts.",
+      "use.consumer.h3": "Bio-aware consumer agents",
+      "use.consumer.p": "Let your AI know when to push, when to back off, and when to stop talking. The first SDK for emotionally and physiologically aware agents.",
+      "tag.ehr": "EHR-ready",
+      "tag.biomarkers": "Biomarkers",
+      "tag.closedloop": "Closed-loop",
+      "tag.wearables": "Wearables",
+      "tag.edge": "Edge inference",
+      "tag.haptics": "Haptics",
+      "tag.reproducible": "Reproducible",
+      "tag.openformats": "Open formats",
+      "tag.agentsdk": "Agent SDK",
+      "tag.ondevice": "On-device",
+      "tag.privacy": "Privacy-first",
+
+      "partners.eyebrow": "Partnerships & research",
+      "partners.h2": "Built with the people <em>shipping the future.</em>",
+      "partners.lede": "Sync OS is co-developed alongside hospitals, research labs and industry partners across Japan, the US and the EU.",
+      "partners.industry.tag": "Industry partnerships",
+      "partners.industry.h3": "Companies <em>partnering</em> with Sync OS.",
+      "partners.industry.p": "Medical device makers, wearable OEMs, automotive HMI teams, performance and wellness brands working with us to shape the bio-adaptive layer.",
+      "partners.research.tag": "Research collaborations",
+      "partners.research.h3": "Top-tier <em>research institutes.</em>",
+      "partners.research.p": "Joint research and clinical studies with leading neuroscience, psychiatry and human-factors labs — the source of our datasets, biomarkers and ground truth.",
+      "pill.medtech": "MedTech",
+      "pill.wearables": "Wearables",
+      "pill.automotive": "Automotive HMI",
+      "pill.performance": "Performance",
+      "pill.consumerai": "Consumer AI",
+      "pill.neuroscience": "Neuroscience",
+      "pill.psychiatry": "Psychiatry",
+      "pill.humanfactors": "Human factors",
+      "pill.sports": "Sports science",
+
+      "numbers.modalities": "Biosignal modalities",
+      "numbers.loop": "Sense → act loop",
+      "numbers.dimensions": "State dimensions",
+      "numbers.ondevice": "On-device option",
+
+      "vision.eyebrow": "Why now",
+      "vision.h2": "The next interface isn't a screen. It's <em>you.</em>",
+      "vision.large": "For 70 years computing has asked humans to translate themselves into clicks, taps, and prompts. Sensors are now small enough, cheap enough, and accurate enough that the translation can finally go the other way. <em>Sync OS is the substrate for that flip.</em>",
+      "vision.about.h4": "About FastNeura Inc.",
+      "vision.about.p": 'We are a Tokyo-born deep-tech company building the bio-adaptive layer for the AI era. Our team brings together neuroscientists, signal engineers, and product builders shipping production systems for hospitals, research labs, and consumer products.<br/><br/><a href="https://fastneura.com/" target="_blank" rel="noopener" class="inline-link"><span>Visit fastneura.com</span> <span style="color:var(--accent);">↗</span></a>',
+      "vision.link": "Visit fastneura.com",
+      "vision.backed.h4": "Backed by",
+      "vision.backed.p": "Selected research partners and strategic investors across Japan, the US, and the EU.",
+
+      "cta.h2": "Build with <em>Sync OS.</em>",
+      "cta.p": "We're onboarding a small group of clinical, research, and product partners ahead of the public SDK. If you're building something that should listen to a human, we'd love to hear from you.",
+      "cta.btn1": 'Request access <span class="arrow">↗</span>',
+      "cta.btn2": "Re-watch the demo",
+
+      "footer.copy": '© <a href="https://fastneura.com/" target="_blank" rel="noopener" style="color:inherit; text-decoration:none; border-bottom:1px solid var(--line); padding-bottom:1px;">FastNeura Inc.</a> — Sync.OS',
+      "footer.tokyo": "Tokyo · Built for the bio-adaptive AI era"
+    },
+
+    ja: {
+      "nav.product": "プロダクト",
+      "nav.stack": "スタック",
+      "nav.states": "ステート",
+      "nav.architecture": "アーキテクチャ",
+      "nav.partners": "パートナー",
+      "nav.vision": "ビジョン",
+      "nav.cta": "アクセス申請 →",
+
+      "hero.eyebrow": "FastNeura Inc. — バイオアダプティブAIプラットフォーム",
+      "hero.h1": '<em>人間の神経系</em>のための、<br/><span class="strike">人</span>の<em>オペレーティングシステム。</em>',
+      "hero.sub": "Sync OS は、脳・心臓・自律神経・モーション・音声・環境などのマルチモーダル生体信号を、ひとつのリアルタイム基盤に統合します。センシング・理解・介入をクローズドループで結び、ソフトウェアがついに <em>あなた</em> に合わせて動く時代へ。",
+      "hero.btn1": 'デモを見る <span class="arrow">↗</span>',
+      "hero.btn2": "スタックを見る",
+      "hero.meta.modalities": "モダリティ",
+      "hero.meta.latency": "ループ遅延",
+      "hero.meta.states": "ステート",
+      "hero.meta.form": "フォームファクタ",
+      "hero.meta.form.v": "ウォッチ <em>·</em> キャップ <em>·</em> パッチ",
+
+      "strip.1": "臨床現場のために",
+      "strip.2": "ハイパフォーマンスチームのために",
+      "strip.3": "神経科学研究のために",
+      "strip.4": "人とAIのインタラクションのために",
+      "strip.5": "クローズドループ・ウェルネスのために",
+
+      "demo.eyebrow": "現行プロダクト · Sync OS v3",
+      "demo.h2": "1つの画面に、<em>人間まるごと。</em>",
+      "demo.lede": "あらゆる信号を身体上の発生源にマッピングし、5つの解釈可能なステートに統合。マルチチャネルの介入までを単一のタイムライン上でクローズドループに結ぶ、ボディ中心のコンソール。",
+      "demo.tag": "ライブキャプチャ · Sync OS v3",
+      "demo.sound.on": "音声オン",
+      "demo.sound.off": "音声オフ",
+      "demo.fullscreen": "全画面",
+
+      "chapter.intro.title": "イントロ",
+      "chapter.intro.sub": "バイオアダプティブAIプラットフォーム。",
+      "chapter.body.title": "ボディマップ",
+      "chapter.body.sub": "あらゆる信号を、その発生源である身体にマッピング。",
+      "chapter.console.title": "統合コンソール",
+      "chapter.console.sub": "デバイス・波形・ステート・介入を、ひとつのビューに。",
+      "chapter.intervention.title": "クローズドループ介入",
+      "chapter.intervention.sub": "Relax / Focus プリセットでステートが動く様子を可視化。",
+      "chapter.platform.title": "プラットフォーム",
+      "chapter.platform.sub": "Sensing → Sync.OS Core → Actuation。",
+      "chapter.outro.title": "アウトロ",
+      "chapter.outro.sub": "FastNeura Inc. / Sync.",
+
+      "callout.1.num": "01 · ボディ中心のUI",
+      "callout.1.h4": "主役は<em>身体</em>であり、デバイスではない。",
+      "callout.1.p": "従来の生体信号ツールはチャネルやプローブで考えることを強います。Sync OS はそれを反転させ、各モダリティを物理的な発生源にドッキングした単一の解剖学的キャンバスを提供します — 頭皮の EEG、胸部の ECG、手首の PPG、手掌の EDA。スプレッドシートではなく、身体から信号が流れ出てくる構造です。",
+      "callout.2.num": "02 · リアルタイム統合",
+      "callout.2.h4": "8つのモダリティを<em>5つのステートへ。</em>",
+      "callout.2.p": "Sync.OS コアは生信号を継続的に統合し、<em>stress · emotion · fatigue · attention · cogload</em> という5つの解釈可能なスコアへ縮約します。ダッシュボードはこれらをライブで更新し、Sync OS の上に立つすべてのプロダクトと臨床チームが、共通の語彙で人間を扱えるようにします。",
+      "callout.3.num": "03 · クローズドループ介入",
+      "callout.3.h4": "センシングは<em>行動して</em>はじめて意味を持つ。",
+      "callout.3.p": "介入はファーストクラスの出力です。Relax / Focus プリセット、ハプティックウォッチ、オーディオエントレインメント、ライト、エージェント呼び出しを起動し、同じ画面でステートが動く様子を確認できます。Sync OS は、ループを「体感できる短さ」にする基盤です。",
+
+      "manifesto.text": "コンピュータは<em>見る</em>ことを学び、<em>話す</em>ことを学んだ。けれど、<em>私たちを感じ返す</em>ことだけは、まだ学んでいない。<br/>Sync OS は、その流れを変える基盤です — 身体が発するあらゆる信号を、ソフトウェアが聞き、学び、応答できるものへと変えていく。",
+      "manifesto.signoff": "— FastNeura Inc., 2026",
+
+      "stack.eyebrow": "ザ・スタック",
+      "stack.h2": "Sense. <em>Sync.</em> Act.",
+      "stack.lede": "3つのレイヤー、ひとつの連続ループ。生の生体信号からモデル推論、マルチチャネル介入まで — あなたの神経系の速度で。",
+      "stack.sense.num": "01 / センシング",
+      "stack.sense.h3": '<span class="glyph">◐</span>身体を読む。',
+      "stack.sense.p": "ウェアラブル、キャップ、パッチ、ウォッチ、環境センサーを単一の正規化タイムラインへ。すべての信号は、その解剖学的発生源にひも付いたまま流れ続けます。",
+      "stack.sync.num": "02 / SYNC CORE",
+      "stack.sync.h3": '<span class="glyph">✦</span>状態を理解する。',
+      "stack.sync.p": "マルチモーダル基盤モデルが信号を統合し、人間の5つの解釈可能なステートを連続更新。必要に応じてオンデバイス推論にも対応。",
+      "stack.act.num": "03 / アクチュエーション",
+      "stack.act.h3": '<span class="glyph">◑</span>ループを閉じる。',
+      "stack.act.p": "介入はおまけではなく、ファーストクラスの出力。ハプティクス・オーディオ・光・エージェント・臨床チャネルを、検証済みの安全エンベロープのもとで駆動します。",
+      "stack.chip.voice": "音声",
+      "stack.chip.env": "環境",
+      "stack.chip.fusion": "マルチモーダル統合",
+      "stack.chip.inference": "状態推論",
+      "stack.chip.personalization": "個別最適化",
+      "stack.chip.edge": "エッジ + クラウド",
+      "stack.chip.haptic": "ハプティクス",
+      "stack.chip.audio": "オーディオ",
+      "stack.chip.light": "ライト",
+      "stack.chip.agent": "エージェント",
+      "stack.chip.stim": "刺激",
+
+      "states.eyebrow": "5つのステート",
+      "states.h2": "<em>状態</em>の語彙。",
+      "states.lede": "Sync OS は数十種類の生信号を、ライブコンソールで提示される5つの解釈可能なスコアに縮約します — ループの中の人間に対して、ソフトウェアが意味のある応答を返せる、最小の語彙。",
+      "states.stress.label": "01 · ストレス",
+      "states.stress.desc": "急性の自律神経負荷。LF/HF 比、皮膚電気活動、心拍から導出。",
+      "states.emotion.label": "02 · 感情",
+      "states.emotion.desc": "感情価。前頭葉アルファ非対称と瞬目ダイナミクスから推定。",
+      "states.fatigue.label": "03 · 疲労",
+      "states.fatigue.desc": "精神的疲労。アルファ/ベータ比、呼吸数、緊張時心拍から複合的に推定。",
+      "states.attention.label": "04 · 注意",
+      "states.attention.desc": "集中の度合い。ベータパワー、アルファ/ベータ比、瞬目抑制から推定。",
+      "states.cogload.label": "05 · 認知負荷",
+      "states.cogload.desc": "認知負荷（n-back 相当）。ベータ活動、心拍、LF/HF を組み合わせて推定。",
+
+      "arch.eyebrow": "アーキテクチャ",
+      "arch.h2": "アプリではなく、<em>インフラ</em>として設計。",
+      "arch.lede": "Sync OS はハードウェアと知能のあいだに位置する、人間理解を必要とするあらゆるプロダクトのための、クリーンな基盤です。",
+      "arch.inputs": "入力",
+      "arch.inputs.imu": "IMU · モーション",
+      "arch.inputs.voice": "音声 · 顔",
+      "arch.inputs.env": "環境",
+      "arch.outputs": "出力",
+      "arch.outputs.haptic": "ハプティックフィードバック",
+      "arch.outputs.audio": "オーディオ · ライト",
+      "arch.outputs.agent": "エージェント呼び出し",
+      "arch.outputs.clinical": "臨床アラート",
+      "arch.outputs.stim": "クローズドループ刺激",
+      "arch.core.tag": "マルチモーダル統合 · 状態推論 · ポリシー",
+
+      "uses.eyebrow": "Where it ships",
+      "uses.h2": "ひとつのプラットフォームから、<em>多様なサーフェスへ。</em>",
+      "uses.lede": "Sync OS は、臨床ツール・パフォーマンスプロダクト・研究スタック、そして次世代の生体認識型コンシューマソフトウェアの下に流れる結合組織です。",
+      "use.clinical.h3": "臨床 & デジタルセラピューティクス",
+      "use.clinical.p": "メンタルヘルス・神経科・リハビリ領域における連続モニタリング、バイオマーカー探索、クローズドループ介入を、信号の出自まで追跡可能な形で。",
+      "use.performance.h3": "パフォーマンス & ハイステークス領域",
+      "use.performance.p": "アスリート、外科医、オペレーター、パイロット。タスクを邪魔せず、控えめなハプティクス・オーディオでリアルタイムに状態を追跡。",
+      "use.research.h3": "神経科学 & HCI 研究",
+      "use.research.p": "同期マルチモーダル収集、アノテーション、モデル学習までを単一のパイプラインで — 散乱した独自 MATLAB スクリプトの墓場と決別。",
+      "use.consumer.h3": "生体認識型コンシューマエージェント",
+      "use.consumer.p": "あなたの AI に、押すとき・引くとき・黙るときを教える。感情的・生理的に人間を理解する、初のエージェント SDK。",
+      "tag.ehr": "EHR連携",
+      "tag.biomarkers": "バイオマーカー",
+      "tag.closedloop": "クローズドループ",
+      "tag.wearables": "ウェアラブル",
+      "tag.edge": "エッジ推論",
+      "tag.haptics": "ハプティクス",
+      "tag.reproducible": "再現性",
+      "tag.openformats": "オープン形式",
+      "tag.agentsdk": "エージェントSDK",
+      "tag.ondevice": "オンデバイス",
+      "tag.privacy": "プライバシーファースト",
+
+      "partners.eyebrow": "パートナーシップ & 研究",
+      "partners.h2": "<em>未来を実装する</em>仲間と共に。",
+      "partners.lede": "Sync OS は、日本・米国・EU の病院、研究機関、産業パートナーとともに共同開発されています。",
+      "partners.industry.tag": "産業パートナーシップ",
+      "partners.industry.h3": "Sync OS と<em>共創する</em>企業。",
+      "partners.industry.p": "医療機器メーカー、ウェアラブル OEM、自動車 HMI チーム、パフォーマンス／ウェルネスブランドが、バイオアダプティブ層の形を共に作っています。",
+      "partners.research.tag": "研究コラボレーション",
+      "partners.research.h3": "トップティアの<em>研究機関。</em>",
+      "partners.research.p": "神経科学、精神医学、ヒューマンファクタの先端研究室と、共同研究および臨床研究を推進 — データセット、バイオマーカー、グラウンドトゥルースの源泉。",
+      "pill.medtech": "メドテック",
+      "pill.wearables": "ウェアラブル",
+      "pill.automotive": "自動車HMI",
+      "pill.performance": "パフォーマンス",
+      "pill.consumerai": "コンシューマAI",
+      "pill.neuroscience": "神経科学",
+      "pill.psychiatry": "精神医学",
+      "pill.humanfactors": "ヒューマンファクタ",
+      "pill.sports": "スポーツ科学",
+
+      "numbers.modalities": "生体信号モダリティ",
+      "numbers.loop": "Sense → Act ループ",
+      "numbers.dimensions": "ステート次元",
+      "numbers.ondevice": "オンデバイス対応",
+
+      "vision.eyebrow": "なぜ今か",
+      "vision.h2": "次のインターフェースは、画面ではない。<em>あなただ。</em>",
+      "vision.large": "70年間、コンピュータは人間に「クリック・タップ・プロンプトに翻訳してくれ」と求めてきた。センサーが十分に小さく、安く、正確になった今、ようやくその翻訳を逆方向に走らせられる。<em>Sync OS は、その反転のための基盤です。</em>",
+      "vision.about.h4": "FastNeura Inc. について",
+      "vision.about.p": '私たちは東京発のディープテックカンパニーとして、AI時代の生体適応レイヤーを構築しています。神経科学者、信号処理エンジニア、プロダクトビルダーが集まり、病院・研究機関・コンシューマプロダクト向けの実装システムを世に出してきました。<br/><br/><a href="https://fastneura.com/" target="_blank" rel="noopener" class="inline-link"><span>fastneura.com を見る</span> <span style="color:var(--accent);">↗</span></a>',
+      "vision.link": "fastneura.com を見る",
+      "vision.backed.h4": "バックアップ",
+      "vision.backed.p": "日本・米国・EU の研究パートナーと戦略的投資家がバックアップ。",
+
+      "cta.h2": "<em>Sync OS</em> で作る。",
+      "cta.p": "公開 SDK に先行して、臨床・研究・プロダクト領域から少数のパートナーをオンボーディングしています。「人間に耳を傾けるべき」プロダクトを作っている方は、ぜひご連絡ください。",
+      "cta.btn1": 'アクセス申請 <span class="arrow">↗</span>',
+      "cta.btn2": "デモをもう一度",
+
+      "footer.copy": '© <a href="https://fastneura.com/" target="_blank" rel="noopener" style="color:inherit; text-decoration:none; border-bottom:1px solid var(--line); padding-bottom:1px;">FastNeura Inc.</a> — Sync.OS',
+      "footer.tokyo": "東京 · バイオアダプティブAI時代のために"
+    }
+  };
+
+  const LANG_KEY = "syncos.lang";
+  function detectInitialLang() {
+    const stored = localStorage.getItem(LANG_KEY);
+    if (stored === "en" || stored === "ja") return stored;
+    const nav = (navigator.language || "en").toLowerCase();
+    return nav.startsWith("ja") ? "ja" : "en";
+  }
+
+  function applyLang(lang) {
+    const dict = I18N[lang] || I18N.en;
+    document.documentElement.setAttribute("lang", lang);
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      if (dict[key] != null) el.innerHTML = dict[key];
+    });
+    document.querySelectorAll(".lang-toggle button").forEach((b) => {
+      const active = b.getAttribute("data-lang") === lang;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    const sound = document.getElementById("demoSound");
+    const v = document.getElementById("demoVideo");
+    if (sound && v) {
+      sound.textContent = v.muted ? dict["demo.sound.on"] : dict["demo.sound.off"];
+    }
+    localStorage.setItem(LANG_KEY, lang);
+  }
+
+  document.querySelectorAll(".lang-toggle button").forEach((b) => {
+    b.addEventListener("click", () => applyLang(b.getAttribute("data-lang")));
+  });
+
+  applyLang(detectInitialLang());
+
+  // === Reveal on scroll ===
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       if (e.isIntersecting) {
         e.target.classList.add('in');
-        // animate state bars
         e.target.querySelectorAll('.bar > i').forEach(i => {
           const w = i.getAttribute('data-w') || 0;
           requestAnimationFrame(() => { i.style.width = w + '%'; });
@@ -1452,7 +1896,7 @@
   }, { threshold: 0.12 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-  // Demo chapter controls
+  // === Demo chapter controls ===
   const v = document.getElementById('demoVideo');
   const chapters = Array.from(document.querySelectorAll('#chapters .chapter'));
   if (v && chapters.length) {
@@ -1475,7 +1919,9 @@
     if (sound) {
       sound.addEventListener('click', () => {
         v.muted = !v.muted;
-        sound.textContent = v.muted ? 'Sound on' : 'Sound off';
+        const lang = document.documentElement.getAttribute("lang") || "en";
+        const dict = I18N[lang] || I18N.en;
+        sound.textContent = v.muted ? dict["demo.sound.on"] : dict["demo.sound.off"];
       });
     }
     const fs = document.getElementById('demoFs');
