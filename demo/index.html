@@ -1,0 +1,3542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sync · Embodied Biosignal OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-0: #05060a;
+  --bg-1: #0a0c14;
+  --bg-2: #11141f;
+  --ink: #e8ecf5;
+  --ink-dim: #8a93a6;
+  --ink-faint: #3a4052;
+  --line: rgba(255,255,255,0.06);
+  --line-bright: rgba(255,255,255,0.14);
+
+  --eeg: #7df9ff;
+  --ecg: #ff4e7d;
+  --ppg: #ff8a3d;
+  --eda: #c6a1ff;
+  --emg: #b4e23f;
+  --imu: #ffd447;
+  --resp: #6bffc6;
+  --temp: #ff6b4a;
+
+  --warn: #ffbf3c;
+  --good: #6bffc6;
+  --bad: #ff4e7d;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg-0);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 100;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.5) 100%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  opacity: 0.7;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: 48px 1fr 40px;
+  height: 100vh; width: 100vw;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: grid;
+  grid-template-columns: 280px 1fr 520px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+  padding: 0 16px;
+  z-index: 20;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand-mark {
+  font-family: var(--font-display);
+  font-weight: 300; font-size: 22px;
+  font-style: italic; letter-spacing: 0.02em;
+}
+.brand-mark::after {
+  content: ''; display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--eeg); border-radius: 50%;
+  margin-left: 6px; transform: translateY(-4px);
+  box-shadow: 0 0 12px var(--eeg);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+.brand-sub {
+  color: var(--ink-dim); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.25em;
+}
+.brand-sub .ver {
+  font-style: italic; color: var(--eeg);
+  letter-spacing: 0.15em; margin-left: 4px;
+}
+.session-strip {
+  display: flex; align-items: center; gap: 28px;
+  justify-content: center;
+}
+.session-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.session-label {
+  font-size: 9px; text-transform: uppercase;
+  color: var(--ink-faint); letter-spacing: 0.3em;
+}
+.session-value {
+  font-size: 11px; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.topbar-right {
+  display: flex; align-items: center;
+  gap: 8px; justify-content: flex-end;
+}
+.scope-switch {
+  display: flex; gap: 0;
+  border: 1px solid var(--line-bright);
+  border-radius: 999px; padding: 2px;
+  background: rgba(0,0,0,0.3);
+}
+.scope-switch button {
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  background: transparent; border: none;
+  color: var(--ink-dim); padding: 4px 10px;
+  border-radius: 999px; cursor: pointer;
+  transition: all 0.2s;
+}
+.scope-switch button:hover { color: var(--ink); }
+.scope-switch button.active {
+  background: var(--ink); color: var(--bg-0);
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line-bright);
+  border-radius: 999px;
+  font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.15em; color: var(--ink-dim);
+  cursor: pointer; transition: all 0.2s;
+}
+.chip:hover { border-color: var(--ink); color: var(--ink); }
+.chip.live { border-color: rgba(107,255,198,0.4); color: var(--good); }
+.chip.live::before {
+  content: ''; width: 6px; height: 6px;
+  background: var(--good); border-radius: 50%;
+  animation: pulseDot 1.2s ease-in-out infinite;
+}
+.chip.recording { color: var(--bad); border-color: rgba(255,78,125,0.5); }
+.chip.recording::before {
+  content: ''; width: 6px; height: 6px;
+  background: var(--bad); border-radius: 50%;
+  animation: pulseDot 1s ease-in-out infinite;
+}
+
+/* ---------- Stage ---------- */
+.stage {
+  display: grid;
+  grid-template-columns: 268px 1fr 352px;
+  overflow: hidden; position: relative;
+  transition: grid-template-columns 0.4s cubic-bezier(.4,0,.2,1);
+}
+.stage.devices-hidden { grid-template-columns: 0px 1fr 352px; }
+.stage.devices-hidden .rail {
+  transform: translateX(-100%); opacity: 0; pointer-events: none;
+}
+
+.rail {
+  border-right: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+  overflow-y: auto; padding: 16px 12px;
+  transition: transform 0.4s cubic-bezier(.4,0,.2,1), opacity 0.3s;
+}
+.rail-right {
+  border-left: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+  padding: 12px 12px 12px; overflow-y: auto;
+}
+.rail::-webkit-scrollbar, .rail-right::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb, .rail-right::-webkit-scrollbar-thumb {
+  background: var(--line-bright); border-radius: 2px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 300; font-style: italic;
+  font-size: 15px; color: var(--ink);
+  margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.section-title .count {
+  font-family: var(--font-mono); font-style: normal;
+  font-size: 9px; color: var(--ink-faint); letter-spacing: 0.25em;
+}
+
+/* Device card */
+.device-card {
+  padding: 10px 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin-bottom: 7px;
+  background: rgba(255,255,255,0.01);
+  cursor: pointer; transition: all 0.25s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+.device-card::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0; width: 2px;
+  background: var(--accent, var(--ink-faint));
+  opacity: 0.3; transition: all 0.25s;
+}
+.device-card:hover { border-color: var(--line-bright); background: rgba(255,255,255,0.02); }
+.device-card.connected::before { opacity: 1; box-shadow: 0 0 10px var(--accent); }
+.device-card.highlighted {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.device-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.device-name { font-size: 11px; font-weight: 500; color: var(--ink); letter-spacing: 0.04em; }
+.device-status {
+  font-size: 8px; text-transform: uppercase;
+  letter-spacing: 0.2em; color: var(--ink-faint);
+}
+.device-card.connected .device-status { color: var(--accent); }
+.device-meta { font-size: 9px; color: var(--ink-dim); margin-bottom: 6px; }
+.modality-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.mod-chip {
+  font-size: 8px; padding: 2px 6px;
+  border: 1px solid var(--line-bright);
+  border-radius: 3px; color: var(--ink-dim);
+  letter-spacing: 0.15em; text-transform: uppercase;
+}
+.device-card.connected .mod-chip {
+  border-color: var(--accent); color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* Device quality */
+.device-quality {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto 1fr auto;
+  gap: 4px 6px;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px dashed rgba(255,255,255,0.05);
+  font-size: 8px; color: var(--ink-faint);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  align-items: center;
+}
+.q-label { color: var(--ink-faint); }
+.q-val { color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.q-bar {
+  height: 2px; background: var(--line);
+  border-radius: 1px; overflow: hidden; position: relative;
+}
+.q-fill {
+  display: block; height: 100%;
+  background: var(--accent, var(--good));
+  border-radius: 1px;
+}
+.q-fill.warn { background: var(--warn); }
+
+.pair-new {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px dashed var(--line-bright);
+  border-radius: 6px;
+  text-align: center;
+  font-size: 10px; color: var(--ink-faint);
+  letter-spacing: 0.2em; text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* ---------- Stage center ---------- */
+.stage-center {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(125,249,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 90%, rgba(255,78,125,0.03) 0%, transparent 60%),
+    var(--bg-0);
+}
+.stage-center::before {
+  content: ''; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+  pointer-events: none;
+}
+.body-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#bodySvg { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; }
+.prop-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 3;
+}
+
+.state-indicator {
+  position: absolute; top: 18px; left: 50%;
+  transform: translateX(-50%);
+  text-align: center; z-index: 10;
+}
+.state-label {
+  font-size: 9px; color: var(--ink-faint);
+  letter-spacing: 0.35em; text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.state-value {
+  font-family: var(--font-display);
+  font-style: italic; font-weight: 300;
+  font-size: 26px; color: var(--ink);
+}
+.state-value .state-dynamic { color: var(--eeg); font-weight: 400; }
+.state-provenance {
+  font-size: 9px; color: var(--ink-dim);
+  letter-spacing: 0.2em; margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Posture indicator */
+.posture-indicator {
+  position: absolute; bottom: 14px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(10,12,20,0.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  padding: 8px 16px;
+  border-radius: 999px; z-index: 10;
+}
+.posture-auto-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 8px; letter-spacing: 0.3em;
+  text-transform: uppercase; color: var(--imu);
+}
+.posture-auto-badge::before {
+  content: ''; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--imu);
+  box-shadow: 0 0 8px var(--imu);
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+.posture-glyphs {
+  display: flex; gap: 6px;
+  padding-left: 12px; border-left: 1px solid var(--line-bright);
+}
+.posture-glyph {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-faint); transition: all 0.35s cubic-bezier(.4,0,.2,1);
+  opacity: 0.35; position: relative;
+}
+.posture-glyph.active {
+  color: var(--imu); opacity: 1;
+  filter: drop-shadow(0 0 8px var(--imu));
+}
+.posture-context {
+  font-size: 9px; color: var(--ink-dim);
+  letter-spacing: 0.15em;
+  font-variant-numeric: tabular-nums;
+  padding-left: 12px; border-left: 1px solid var(--line-bright);
+}
+.posture-context strong { color: var(--ink); font-weight: 500; }
+.posture-context .ctx-sep { color: var(--ink-faint); margin: 0 4px; }
+
+/* Rail toggle */
+.rail-toggle {
+  position: absolute; top: 12px; left: 12px;
+  z-index: 15; width: 30px; height: 30px;
+  border-radius: 8px;
+  background: rgba(10,12,20,0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line-bright);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-dim);
+}
+.rail-toggle:hover { color: var(--ink); border-color: var(--ink); }
+
+/* Heatmap layer */
+.heatmap-layer { mix-blend-mode: screen; pointer-events: none; }
+.heat-region { transition: opacity 0.8s ease-out, r 0.8s ease-out; filter: blur(18px); }
+
+/* Heatmap legend */
+.heatmap-legend {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(10,12,20,0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  padding: 8px 12px; border-radius: 6px;
+  z-index: 10; font-size: 8px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.heatmap-legend-title { margin-bottom: 6px; color: var(--ink-faint); }
+.heatmap-legend-gradient {
+  width: 120px; height: 4px; border-radius: 2px;
+  background: linear-gradient(90deg,
+    rgba(107,255,198,0.8) 0%, rgba(255,191,60,0.8) 50%, rgba(255,78,125,0.9) 100%);
+  margin-bottom: 3px;
+}
+.heatmap-legend-scale { display: flex; justify-content: space-between; font-size: 7px; }
+
+/* Waveform nodes */
+.wave-node {
+  position: absolute; width: 190px;
+  pointer-events: auto; z-index: 4;
+  transition: all 0.6s cubic-bezier(.4,0,.2,1);
+}
+.wave-node .node-label {
+  display: flex; align-items: baseline; gap: 6px;
+  font-size: 8px; text-transform: uppercase;
+  letter-spacing: 0.25em; color: var(--ink-dim);
+  margin-bottom: 2px;
+}
+.wave-node .node-label .mod { color: var(--accent); font-weight: 700; }
+.wave-node .node-label .q-dot {
+  display: inline-block; width: 5px; height: 5px;
+  border-radius: 50%; background: var(--good);
+  box-shadow: 0 0 5px currentColor; margin-left: auto;
+}
+.wave-node .node-label .q-dot.warn { background: var(--warn); color: var(--warn); }
+.wave-node .node-label .q-dot.bad { background: var(--bad); color: var(--bad); }
+.wave-node .node-value {
+  font-family: var(--font-display); font-style: italic;
+  font-weight: 300; font-size: 19px; color: var(--ink);
+  line-height: 1; margin-bottom: 2px;
+}
+.wave-node .node-unit {
+  font-family: var(--font-mono); font-style: normal;
+  font-size: 9px; color: var(--ink-faint); margin-left: 3px;
+}
+.wave-node canvas { display: block; width: 100%; height: 44px; }
+.wave-node.left { transform: translateX(-100%); text-align: right; }
+.wave-node.left .node-label { justify-content: flex-end; }
+.wave-node.left .node-label .q-dot { margin-left: 4px; margin-right: 0; order: -1; }
+.wave-node.dim { opacity: 0.28; filter: grayscale(0.4); }
+
+.connectors { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+
+/* Coherence ring */
+.coherence-ring {
+  position: absolute; left: 18px; bottom: 70px;
+  background: rgba(10,12,20,0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px; z-index: 10;
+  width: 208px;
+}
+.coh-title {
+  font-size: 8px; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+#coherenceCanvas { width: 100%; height: 46px; display: block; }
+.coh-legend {
+  display: flex; flex-direction: column; gap: 3px;
+  margin-top: 6px; font-size: 9px;
+  color: var(--ink-dim); letter-spacing: 0.05em;
+}
+.coh-legend span { display: flex; align-items: center; gap: 6px; }
+.coh-legend i {
+  width: 6px; height: 6px; border-radius: 50%;
+  display: inline-block; box-shadow: 0 0 6px currentColor;
+}
+.coh-legend b {
+  margin-left: auto; color: var(--ink);
+  font-variant-numeric: tabular-nums; font-weight: 500;
+}
+
+/* ---------- Right rail ---------- */
+.focus-tabs {
+  display: flex; gap: 0;
+  border: 1px solid var(--line-bright);
+  border-radius: 6px; padding: 2px;
+  background: rgba(0,0,0,0.3);
+  margin-bottom: 14px;
+}
+.focus-tabs .ft {
+  flex: 1; font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; background: transparent;
+  border: none; color: var(--ink-dim);
+  padding: 5px 8px; border-radius: 4px;
+  cursor: pointer; transition: all 0.2s;
+}
+.focus-tabs .ft:hover { color: var(--ink); }
+.focus-tabs .ft.active { background: var(--ink); color: var(--bg-0); }
+
+.metric-group { margin-bottom: 14px; }
+.metric-group[data-open="0"] .metric-group-body { display: none; }
+.metric-group-head {
+  display: flex; align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px; padding: 0 2px;
+  cursor: pointer;
+}
+.metric-group-title {
+  font-family: var(--font-display);
+  font-style: italic; font-weight: 300;
+  font-size: 14px; color: var(--ink);
+}
+.metric-group-src {
+  font-size: 8px; text-transform: uppercase;
+  letter-spacing: 0.25em; color: var(--ink-faint);
+  flex: 1; text-align: right;
+  margin-right: 8px;
+}
+.mg-collapse {
+  font-size: 11px; color: var(--ink-dim);
+  width: 14px; text-align: center;
+}
+
+/* mrow */
+.mrow {
+  display: grid;
+  grid-template-columns: 62px 1fr 58px;
+  align-items: center; gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.mrow:last-child { border-bottom: none; }
+.mrow-label {
+  font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--mrow-color, var(--ink-dim));
+  font-weight: 500; line-height: 1.1;
+}
+.mrow-label .band-range {
+  display: block; font-size: 7px; font-weight: 400;
+  color: var(--ink-faint); letter-spacing: 0.08em;
+  margin-top: 1px;
+}
+.mrow-bar {
+  position: relative; height: 3px;
+  background: var(--line); border-radius: 2px;
+}
+.mrow-baseband {
+  position: absolute; top: -2px; bottom: -2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px; border: 1px dashed rgba(255,255,255,0.12);
+  pointer-events: none;
+}
+.mrow-baseband.bipolar { background: rgba(198,161,255,0.08); }
+.mrow-bar-fill {
+  position: absolute; height: 100%;
+  background: var(--mrow-color, var(--ink));
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(.4,0,.2,1), left 0.6s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 8px var(--mrow-color);
+  z-index: 2;
+}
+.mrow-bar-fill::after {
+  content: ''; position: absolute;
+  right: -1px; top: -2px; bottom: -2px;
+  width: 2px; background: var(--mrow-color);
+}
+.mrow-bar-mid {
+  position: absolute; left: 50%; top: -3px; bottom: -3px;
+  width: 1px; background: rgba(255,255,255,0.25);
+}
+.mrow-value {
+  font-family: var(--font-display); font-style: italic;
+  font-size: 14px; color: var(--ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.mrow-value .mrow-unit {
+  font-family: var(--font-mono); font-style: normal;
+  font-size: 8px; color: var(--ink-faint); margin-left: 2px;
+}
+
+/* Construct grid */
+.construct-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.construct-card {
+  padding: 9px 10px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.015);
+  position: relative; overflow: hidden;
+  cursor: pointer; transition: all 0.25s;
+}
+.construct-card:hover { border-color: var(--c-accent); background: rgba(255,255,255,0.03); }
+.construct-card.expanded { grid-column: span 2; border-color: var(--c-accent); }
+.construct-card::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--c-accent, var(--ink)) 0%, transparent 100%);
+  opacity: 0.9;
+}
+.construct-title {
+  font-size: 8px; text-transform: uppercase;
+  letter-spacing: 0.22em; color: var(--ink-dim);
+  margin-bottom: 4px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.construct-title .why {
+  font-size: 8px; color: var(--c-accent); opacity: 0.6;
+  letter-spacing: 0.15em;
+}
+.construct-value-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 3px;
+}
+.construct-value {
+  font-family: var(--font-display); font-style: italic;
+  font-weight: 300; font-size: 22px; line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.construct-delta {
+  font-family: var(--font-mono); font-size: 8px;
+  letter-spacing: 0.08em; font-variant-numeric: tabular-nums;
+}
+.construct-delta.up { color: var(--good); }
+.construct-delta.down { color: var(--bad); }
+.construct-spark { height: 18px; width: 100%; display: block; }
+.construct-tag {
+  font-size: 7px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--c-accent, var(--ink-faint));
+  margin-top: 2px; opacity: 0.75;
+}
+/* Inline attribution (when expanded) */
+.construct-attrib {
+  display: none;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255,255,255,0.08);
+}
+.construct-card.expanded .construct-attrib { display: block; }
+.attrib-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 42px;
+  gap: 6px; align-items: center;
+  padding: 3px 0;
+}
+.attrib-name {
+  font-size: 9px; color: var(--ink-dim);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.attrib-bar {
+  position: relative; height: 4px;
+  background: rgba(255,255,255,0.04); border-radius: 2px;
+}
+.attrib-mid {
+  position: absolute; left: 50%; top: -2px; bottom: -2px;
+  width: 1px; background: rgba(255,255,255,0.2);
+}
+.attrib-fill {
+  position: absolute; top: 0; bottom: 0; height: 100%;
+  background: var(--c-accent);
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--c-accent);
+}
+.attrib-fill.neg { background: var(--ink-dim); box-shadow: 0 0 6px rgba(255,255,255,0.2); }
+.attrib-val {
+  font-family: var(--font-mono); font-size: 9px;
+  color: var(--ink); text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Intervention */
+.intervention {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(198,161,255,0.25);
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(198,161,255,0.05) 0%, transparent 100%);
+  position: relative; overflow: hidden;
+}
+.intervention::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 100% 0%, rgba(198,161,255,0.1), transparent 60%);
+  pointer-events: none;
+}
+.interv-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.interv-title {
+  font-family: var(--font-display); font-style: italic;
+  font-weight: 400; font-size: 16px; color: var(--ink);
+}
+.interv-mode {
+  font-size: 9px; color: var(--eda);
+  letter-spacing: 0.2em;
+}
+.interv-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.interv-row:last-of-type { border-bottom: none; }
+.interv-name {
+  flex: 1; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--ink-dim);
+}
+.interv-status {
+  font-size: 9px; color: var(--ink-faint);
+  letter-spacing: 0.15em;
+}
+.interv-status.on { color: var(--good); }
+.toggle {
+  position: relative; width: 32px; height: 18px;
+  border-radius: 999px; background: var(--bg-2);
+  border: 1px solid var(--line-bright);
+  cursor: pointer; transition: all 0.3s;
+}
+.toggle::after {
+  content: ''; position: absolute;
+  top: 2px; left: 2px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--ink-dim);
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+}
+.toggle.on { background: rgba(198,161,255,0.2); border-color: var(--eda); }
+.toggle.on::after { left: 16px; background: var(--eda); box-shadow: 0 0 10px var(--eda); }
+
+.response-timeline {
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+.response-timeline-head {
+  display: flex; align-items: center;
+  gap: 8px; margin-bottom: 6px;
+  font-size: 8px; color: var(--ink-faint);
+  text-transform: uppercase; letter-spacing: 0.2em;
+}
+.rt-title { flex: 0 0 auto; }
+.rt-tags { display: flex; gap: 6px; align-items: center; flex: 1; }
+.rt-tag {
+  font-size: 7px; padding: 1px 5px;
+  border-radius: 2px; letter-spacing: 0.15em;
+}
+.rt-tag.pre { background: rgba(255,255,255,0.06); color: var(--ink-dim); }
+.rt-tag.post { background: rgba(198,161,255,0.15); color: var(--eda); }
+.rt-effect { color: var(--ink); letter-spacing: 0.05em; font-size: 8px; }
+.rt-timer { margin-left: auto; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+#responseCanvas { width: 100%; height: 64px; display: block; }
+.response-meta {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin-top: 6px; font-size: 8px;
+  color: var(--ink-faint); letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.response-meta b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* ---------- Bottom bar ---------- */
+.bottombar {
+  border-top: 1px solid var(--line);
+  background: var(--bg-1);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px; padding: 0 16px;
+  font-size: 9px; color: var(--ink-faint);
+  letter-spacing: 0.2em; text-transform: uppercase;
+}
+.timeline {
+  position: relative; height: 24px;
+  display: flex; align-items: center;
+}
+.tl-track {
+  position: absolute; left: 0; right: 0;
+  height: 3px; background: rgba(255,255,255,0.04);
+  border-radius: 2px;
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0px, transparent 38px,
+      rgba(255,255,255,0.05) 38px, rgba(255,255,255,0.05) 39px);
+}
+.tl-cursor {
+  position: absolute;
+  top: 3px; bottom: 3px; width: 2px;
+  background: var(--eeg);
+  box-shadow: 0 0 8px var(--eeg);
+  transition: left 0.3s linear;
+}
+.tl-marker {
+  position: absolute; top: -2px;
+  width: 10px; height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--ink); border-radius: 1px;
+  cursor: pointer;
+}
+.tl-marker.vns-on { background: var(--eda); box-shadow: 0 0 8px var(--eda); }
+.tl-marker.vns-off { background: var(--ink-faint); }
+.tl-marker.bookmark { background: var(--imu); box-shadow: 0 0 8px var(--imu); }
+.tl-marker.posture { background: var(--eeg); box-shadow: 0 0 6px var(--eeg); opacity: 0.6; width: 8px; height: 8px; }
+.tl-label {
+  position: absolute; top: -14px;
+  font-size: 7px; letter-spacing: 0.15em;
+  color: var(--ink-faint);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.bottombar-right { display: flex; gap: 18px; align-items: center; }
+.bb-item { display: flex; align-items: center; gap: 6px; }
+.bb-item strong {
+  color: var(--ink-dim); font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Attribution popover (used for non-construct contexts) ---------- */
+.attrib-pop {
+  position: fixed; z-index: 200;
+  width: 280px;
+  background: rgba(10,12,20,0.96);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--line-bright);
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+.attrib-head {
+  display: flex; justify-content: space-between;
+  margin-bottom: 10px;
+  font-family: var(--font-display);
+  font-style: italic; font-size: 15px;
+}
+.attrib-head button {
+  background: none; border: none; color: var(--ink-dim);
+  font-size: 18px; cursor: pointer;
+}
+.attrib-foot {
+  margin-top: 8px; font-size: 8px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ---------- Tweaks ---------- */
+.tweaks {
+  position: fixed; bottom: 60px; right: 16px;
+  width: 260px; z-index: 150;
+  background: rgba(10,12,20,0.94);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--line-bright);
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+.tweaks-head {
+  font-family: var(--font-display); font-style: italic;
+  font-size: 15px; margin-bottom: 10px;
+  color: var(--ink);
+}
+.tw-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0; font-size: 10px;
+  color: var(--ink-dim); letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.tw-row:last-child { border-bottom: none; }
+.tw-row select, .tw-row input[type="checkbox"] {
+  background: transparent;
+  border: 1px solid var(--line-bright);
+  color: var(--ink); padding: 3px 6px;
+  font-family: var(--font-mono); font-size: 10px;
+  border-radius: 4px;
+}
+
+/* Animations */
+@keyframes pulseDot {
+  0%,100% { opacity:1; transform: scale(1); }
+  50% { opacity:0.4; transform: scale(0.85); }
+}
+@keyframes ringPulse {
+  0% { r:4; opacity:1; }
+  100% { r:32; opacity:0; }
+}
+@keyframes fadeInUp {
+  from { opacity:0; transform: translateY(8px); }
+  to { opacity:1; transform: translateY(0); }
+}
+.wave-node { animation: fadeInUp 0.5s ease-out both; }
+
+/* Hover highlight on body regions */
+.region-highlight {
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+
+/* ============================================================
+   v2 additions — hooks referenced by new markup
+   ============================================================ */
+
+/* Topbar polish */
+.topbar { padding: 0 16px; border-bottom: 1px solid var(--line); background: var(--bg-1); z-index: 20; }
+.topbar-left, .topbar-center, .topbar-right { display: flex; align-items: center; gap: 10px; }
+.topbar-center { justify-content: center; }
+.session-meta { display: flex; align-items: center; gap: 10px; color: var(--ink-dim); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; }
+.session-label { color: var(--ink-faint); }
+.session-name { color: var(--ink); font-style: italic; font-family: var(--font-display); font-size: 14px; text-transform: none; letter-spacing: 0.02em; }
+.session-sep { color: var(--ink-faint); }
+.session-time { color: var(--ink); font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; }
+.rec-indicator { display: inline-flex; align-items: center; gap: 5px; color: var(--bad); font-size: 8px; letter-spacing: 0.2em; padding: 2px 6px; border: 1px solid var(--bad); border-radius: 2px; }
+.rec-dot { display:inline-block; width:5px; height:5px; border-radius:50%; background: var(--bad); box-shadow: 0 0 6px var(--bad); animation: pulseDot 1.2s ease-in-out infinite; }
+
+/* Time scope */
+.time-scope { display: flex; border: 1px solid var(--line-bright); border-radius: 4px; overflow: hidden; }
+.ts-btn { background: transparent; border: none; color: var(--ink-faint); font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.18em; padding: 4px 8px; cursor: pointer; transition: all 0.2s; border-right: 1px solid var(--line); }
+.ts-btn:last-child { border-right: none; }
+.ts-btn:hover { color: var(--ink-dim); }
+.ts-btn.active { background: var(--ink); color: var(--bg-0); }
+
+/* Mode toggle */
+.mode-toggle { display: flex; border: 1px solid var(--line-bright); border-radius: 4px; overflow: hidden; }
+.mt-btn { background: transparent; border: none; color: var(--ink-faint); font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.2em; padding: 4px 10px; cursor: pointer; transition: all 0.2s; border-right: 1px solid var(--line); }
+.mt-btn:last-child { border-right: none; }
+.mt-btn:hover { color: var(--ink-dim); }
+.mt-btn.active { background: var(--eda); color: var(--bg-0); box-shadow: 0 0 12px var(--eda); }
+
+/* Icon buttons */
+.icon-btn { width: 26px; height: 26px; background: transparent; border: 1px solid var(--line-bright); border-radius: 4px; color: var(--ink-dim); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+.icon-btn:hover { color: var(--ink); border-color: var(--ink-dim); }
+.icon-btn.flashed { background: var(--imu); color: var(--bg-0); border-color: var(--imu); box-shadow: 0 0 14px var(--imu); }
+
+/* Rail section head */
+.rail-section-head { display: flex; align-items: baseline; justify-content: space-between; padding: 8px 4px 10px; }
+.rsh-title { font-family: var(--font-display); font-style: italic; font-weight: 300; font-size: 14px; color: var(--ink); }
+.rsh-count { font-size: 8px; color: var(--ink-faint); letter-spacing: 0.22em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+
+/* Device list spacing */
+#deviceList { display: flex; flex-direction: column; gap: 6px; }
+.device-card { cursor: pointer; }
+.dq-label { font-size: 7px; letter-spacing: 0.2em; color: var(--ink-faint); text-transform: uppercase; }
+.dq-val { font-size: 9px; color: var(--ink-dim); font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+.snr-bar { position: relative; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+.snr-fill { height: 100%; transition: width 0.6s ease-out; background: var(--good); }
+.snr-fill.art { background: var(--warn); box-shadow: 0 0 4px var(--warn); }
+.device-quality.offline { grid-template-columns: 1fr; padding: 4px 0 0; }
+.dq-offline { font-size: 8px; color: var(--ink-faint); letter-spacing: 0.2em; text-transform: uppercase; }
+.interv-trigger { font-size: 7px; color: var(--ink-faint); letter-spacing: 0.15em; text-transform: uppercase; font-family: var(--font-mono); }
+
+/* Context card */
+.context-card { padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: rgba(255,255,255,0.015); }
+.ctx-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+.ctx-val { color: var(--ink); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.02em; text-transform: none; }
+
+/* Scenario select */
+.scenario-select { display: flex; gap: 4px; flex-wrap: wrap; }
+.sc-btn { flex: 1; min-width: 60px; background: transparent; border: 1px solid var(--line-bright); border-radius: 4px; padding: 4px 6px; color: var(--ink-faint); font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+.sc-btn:hover { color: var(--ink-dim); border-color: var(--ink-faint); }
+.sc-btn.active { background: var(--ink); color: var(--bg-0); border-color: var(--ink); }
+
+/* Wave-nodes layer */
+.wave-nodes { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.wave-nodes .wave-node { pointer-events: auto; }
+
+/* Coherence ring extras */
+.cr-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.cr-title { font-family: var(--font-display); font-style: italic; font-size: 12px; color: var(--ink); }
+.cr-sub { font-size: 7px; color: var(--ink-faint); letter-spacing: 0.22em; text-transform: uppercase; }
+.coherence-ring { padding: 10px; border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(6px); z-index: 9; }
+#coherenceCanvas { width: 170px; height: 130px; display: block; }
+.cr-legend { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.cr-legend-row { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 8px; color: var(--ink-dim); letter-spacing: 0.1em; }
+.cr-edge { color: var(--ink-dim); }
+.cr-tie { color: var(--eda); }
+.cr-val { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* Focus/dim states */
+body.focus-neuro .metric-group[data-group="autonomic"] .metric-group-body,
+body.focus-neuro .metric-group[data-group="mental"] .metric-group-body { opacity: 0.35; }
+body.focus-autonomic .metric-group[data-group="neuro"] .metric-group-body,
+body.focus-autonomic .metric-group[data-group="mental"] .metric-group-body { opacity: 0.35; }
+body.focus-mental .metric-group[data-group="neuro"] .metric-group-body,
+body.focus-mental .metric-group[data-group="autonomic"] .metric-group-body { opacity: 0.35; }
+body.scope-baseline .mrow-baseband { background: rgba(198,161,255,0.18); border-color: rgba(198,161,255,0.4); }
+body.intervene-mode .intervention { border-color: var(--eda); box-shadow: 0 0 24px rgba(198,161,255,0.15); }
+body.no-heatmap .heatmap-layer { display: none; }
+
+</style>
+<style>
+  /* Font override: swap Fraunces → Instrument Serif */
+  :root { --font-display: 'Instrument Serif', Georgia, serif; }
+  .state-value, .construct-value, .mrow-value, .interv-title, .tweaks-head, .attrib-head, .metric-group-title, .wave-node .node-value { font-family: var(--font-display); }
+
+  /* Page nav */
+  .page-nav { display: flex; border: 1px solid var(--line-bright); border-radius: 4px; overflow: hidden; margin-right: 4px; }
+  .pg-btn { background: transparent; border: none; color: var(--ink-faint); font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.2em; padding: 4px 9px; cursor: pointer; border-right: 1px solid var(--line); transition: all 0.2s; }
+  .pg-btn:last-child { border-right: none; }
+  .pg-btn:hover:not([disabled]) { color: var(--ink-dim); }
+  .pg-btn.active { background: var(--ink); color: var(--bg-0); }
+  .pg-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
+  .pg-btn[disabled]::after { content:' · soon'; font-size: 6px; opacity: 0.6; }
+
+  /* Display menu */
+  .display-menu-wrap { position: relative; }
+  .display-menu { position: absolute; top: 34px; right: 0; z-index: 200; width: 200px;
+    background: rgba(10,12,20,0.96); backdrop-filter: blur(14px);
+    border: 1px solid var(--line-bright); border-radius: 6px; padding: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6); display: none; }
+  .display-menu.open { display: block; }
+  .dm-head { font-family: var(--font-display); font-style: italic; font-size: 13px; color: var(--ink); margin-bottom: 6px; }
+  .dm-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 10px; color: var(--ink-dim); cursor: pointer; font-family: var(--font-mono); letter-spacing: 0.04em; }
+  .dm-row:hover { color: var(--ink); }
+  .dm-row input { accent-color: var(--eeg); margin: 0; }
+  .dm-sep { height: 1px; background: var(--line); margin: 6px 0; }
+
+  /* Panel hide states (from Display menu) */
+  body.hide-devices .rail { display: none; }
+  body.hide-devices .stage { grid-template-columns: 0px 1fr 352px; }
+  body.hide-metrics .rail-right { display: none; }
+  body.hide-metrics .stage { grid-template-columns: 268px 1fr 0px; }
+  body.hide-devices.hide-metrics .stage { grid-template-columns: 0 1fr 0; }
+  body.hide-coherence .coherence-ring { display: none; }
+  body.hide-intervention .intervention { display: none; }
+  body.hide-timescope .time-scope { display: none !important; }
+  body.hide-state .state-indicator { display: none; }
+  body.hide-timeline .bottombar { display: none; }
+  body.hide-timeline .app { grid-template-rows: 48px 1fr 0; }
+
+  /* Density presets */
+  body.density-minimal .posture-glyphs,
+  body.density-minimal .state-provenance,
+  body.density-minimal .response-timeline,
+  body.density-minimal .rail-section-head:nth-of-type(2) + .context-card + .rail-section-head,
+  body.density-minimal .scenario-select,
+  body.density-minimal .band-range,
+  body.density-minimal .attrib-foot,
+  body.density-minimal .bottombar-right { display: none; }
+  body.density-minimal .mrow { padding: 4px 0; }
+  body.density-minimal .construct-tag { display: none; }
+
+  body.density-standard .metric-group[data-group="neuro"] { opacity: 0.85; }
+  body.density-standard .band-range { display: none; }
+
+  /* Make bottom bar breathe */
+  body.hide-timeline .bottombar { display: none; }
+
+  /* ============================================================
+     v3 additions — plug-and-play body visual language
+     ============================================================ */
+
+  /* Sockets on body silhouette */
+  .socket-layer { pointer-events: none; }
+  .body-socket { transition: opacity 0.4s ease-out, r 0.4s ease-out; }
+  .body-socket.ghost { opacity: 0.5; }
+  @keyframes socketPulse {
+    0%   { r: 5;  opacity: 0.6; }
+    100% { r: 18; opacity: 0;   }
+  }
+
+  /* Full-viewport sprout canvas (device card → body anchor trail) */
+  .sprout-canvas {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 101;
+    mix-blend-mode: screen;
+  }
+
+  /* Body-positioned Δ readouts (shown while intervention is active) */
+  .readout-layer {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 8;
+  }
+  .body-readout {
+    position: absolute;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--accent, var(--ink));
+    padding: 3px 7px;
+    background: rgba(10,12,20,0.78);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-left: 2px solid var(--accent, var(--ink));
+    border-radius: 3px;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent, #fff) 30%, transparent);
+    white-space: nowrap;
+    animation: readoutIn 0.4s cubic-bezier(.4,0,.2,1) both;
+  }
+  .body-readout .br-text { font-variant-numeric: tabular-nums; }
+  @keyframes readoutIn {
+    from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+    to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+
+  /* Body + waves crossfade during posture morph */
+  .body-svg, .wave-nodes { transition: opacity 0.35s cubic-bezier(.4,0,.2,1); }
+</style>
+</head>
+<body data-screen-label="01 Sync v2 — Embodied Biosignal OS">
+<div class="app">
+
+  <!-- ============================================================ -->
+  <!-- TOP BAR -->
+  <!-- ============================================================ -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand">
+        <span class="brand-mark">◉</span>
+        <span class="brand-name">SYNC</span>
+        <span class="brand-sub">/ embodied biosignal os</span>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <div class="session-meta">
+        <span class="session-label">Session</span>
+        <span class="session-name" id="sessionName">nocturnal · 02</span>
+        <span class="session-sep">·</span>
+        <span class="session-time" id="sessionTime">00:00:00</span>
+        <span class="rec-indicator" id="recIndicator">
+          <span class="rec-dot"></span>REC
+        </span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <!-- Page nav (MVP: Live only; others disabled) -->
+      <div class="page-nav" id="pageNav">
+        <button class="pg-btn active" data-pg="live">LIVE</button>
+        <button class="pg-btn" data-pg="sessions" disabled>SESSIONS</button>
+        <button class="pg-btn" data-pg="interv" disabled>INTERVENE</button>
+        <button class="pg-btn" data-pg="devices" disabled>DEVICES</button>
+      </div>
+      <!-- Display toggle menu -->
+      <div class="display-menu-wrap">
+        <button class="icon-btn" id="btnDisplayMenu" title="Show/hide panels">
+          <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+        </button>
+        <div class="display-menu" id="displayMenu">
+          <div class="dm-head">Panels</div>
+          <label class="dm-row"><input type="checkbox" data-panel="devices" checked> Device rail</label>
+          <label class="dm-row"><input type="checkbox" data-panel="metrics" checked> Metrics rail</label>
+          <label class="dm-row"><input type="checkbox" data-panel="coherence"> Cross-modal Φ</label>
+          <label class="dm-row"><input type="checkbox" data-panel="intervention"> Intervention</label>
+          <label class="dm-row"><input type="checkbox" data-panel="timescope"> Time scope</label>
+          <label class="dm-row"><input type="checkbox" data-panel="state" checked> State label</label>
+          <label class="dm-row"><input type="checkbox" data-panel="timeline" checked> Timeline</label>
+          <div class="dm-sep"></div>
+          <label class="dm-row"><input type="radio" name="density" value="minimal" checked> Density · minimal</label>
+          <label class="dm-row"><input type="radio" name="density" value="standard"> Density · standard</label>
+          <label class="dm-row"><input type="radio" name="density" value="full"> Density · full</label>
+        </div>
+      </div>
+      <!-- Time scope -->
+      <div class="time-scope" id="timeScope" style="display:none">
+        <button class="ts-btn active" data-scope="now">NOW · 10s</button>
+        <button class="ts-btn" data-scope="30s">30s</button>
+        <button class="ts-btn" data-scope="session">SESSION</button>
+        <button class="ts-btn" data-scope="baseline">vs BASE</button>
+      </div>
+      <button class="icon-btn" id="btnBookmark" title="Add bookmark (B)">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 2v13l5-3.5L13 15V2z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================================================ -->
+  <!-- STAGE: DEVICES | BODY | METRICS -->
+  <!-- ============================================================ -->
+  <main class="stage" id="stage">
+
+    <!-- ---------- DEVICE RAIL ---------- -->
+    <aside class="rail" id="deviceRail">
+      <div class="rail-section-head">
+        <span class="rsh-title">Devices</span>
+        <span class="rsh-count" id="deviceCount">4 / 6</span>
+      </div>
+      <div id="deviceList"></div>
+
+      <div class="rail-section-head" style="margin-top:14px">
+        <span class="rsh-title">Context</span>
+        <span class="rsh-count" id="postureDetected">auto-detect</span>
+      </div>
+      <div class="context-card" id="contextCard">
+        <div class="ctx-row">
+          <span class="ctx-label">Posture</span>
+          <span class="ctx-val" id="ctxPosture">standing</span>
+        </div>
+        <div class="ctx-row">
+          <span class="ctx-label">Activity</span>
+          <span class="ctx-val" id="ctxActivity">still · 1.2 MET</span>
+        </div>
+        <div class="ctx-row">
+          <span class="ctx-label">Scene</span>
+          <span class="ctx-val" id="ctxScene">focus · indoor</span>
+        </div>
+        <div class="ctx-row">
+          <span class="ctx-label">Time of day</span>
+          <span class="ctx-val" id="ctxTod">22:14 · late</span>
+        </div>
+      </div>
+
+      <div class="rail-section-head" style="margin-top:14px">
+        <span class="rsh-title">Scenario</span>
+        <span class="rsh-count">override</span>
+      </div>
+      <div class="scenario-select" id="scenarioSelect">
+        <button class="sc-btn active" data-sc="auto">auto</button>
+        <button class="sc-btn" data-sc="meditate">meditate</button>
+        <button class="sc-btn" data-sc="stress">stress task</button>
+      </div>
+    </aside>
+
+    <!-- ---------- BODY STAGE ---------- -->
+    <section class="stage-center" id="stageCenter">
+      <!-- Collapse device rail -->
+      <button class="rail-toggle" id="railToggle" title="Toggle device rail">
+        <svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+      </button>
+
+      <!-- State indicator (top-center) -->
+      <div class="state-indicator">
+        <div class="state-label">Integrated state</div>
+        <div class="state-value"><span class="state-dynamic" id="stateText">Focused · Relaxed</span></div>
+        <div class="state-provenance" id="stateProv">↑α · ↑HRV · ↓LF/HF</div>
+      </div>
+
+      <!-- Posture glyphs (top-right corner) -->
+      <div class="posture-glyphs" id="postureGlyphs">
+        <div class="posture-glyph" data-posture="sit" title="Sit">
+          <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="4" r="2" fill="currentColor"/><path d="M6 17 V12 Q6 9 10 9 Q14 9 14 12 V17" stroke="currentColor" fill="none" stroke-width="1.3"/></svg>
+        </div>
+        <div class="posture-glyph active" data-posture="stand" title="Stand">
+          <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="3" r="2" fill="currentColor"/><path d="M10 5 V17 M6 17 L10 11 L14 17" stroke="currentColor" fill="none" stroke-width="1.3"/></svg>
+        </div>
+        <div class="posture-glyph" data-posture="walk" title="Walk">
+          <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="3" r="2" fill="currentColor"/><path d="M10 5 V10 M7 17 L10 10 L13 14 L12 17 M8 14 L10 10" stroke="currentColor" fill="none" stroke-width="1.3"/></svg>
+        </div>
+        <div class="posture-glyph" data-posture="run" title="Run">
+          <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="11" cy="3" r="2" fill="currentColor"/><path d="M11 5 L8 9 L5 8 M8 9 L11 12 L10 17 M11 12 L14 10 L17 13" stroke="currentColor" fill="none" stroke-width="1.3"/></svg>
+        </div>
+      </div>
+
+      <!-- Body SVG + canvas overlays + wave nodes -->
+      <svg id="bodySvg" class="body-svg" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid meet"></svg>
+      <canvas id="propCanvas" class="prop-canvas"></canvas>
+      <svg id="connectorSvg" class="connectors"></svg>
+      <div id="waveNodes" class="wave-nodes"></div>
+
+      <!-- Cross-modal coherence ring (bottom-left) -->
+      <div class="coherence-ring" id="coherenceRing">
+        <div class="cr-head">
+          <span class="cr-title">Cross-modal</span>
+          <span class="cr-sub">coherence</span>
+        </div>
+        <canvas id="coherenceCanvas" width="170" height="130"></canvas>
+        <div class="cr-legend" id="coherenceLegend"></div>
+      </div>
+    </section>
+
+    <!-- ---------- METRICS RAIL ---------- -->
+    <aside class="rail-right">
+      <!-- Focus tabs -->
+      <div class="focus-tabs" id="focusTabs">
+        <button class="ft active" data-focus="all">ALL</button>
+        <button class="ft" data-focus="neuro">NEURO</button>
+        <button class="ft" data-focus="autonomic">AUTONOMIC</button>
+        <button class="ft" data-focus="mental">MENTAL</button>
+      </div>
+
+      <!-- EEG bands -->
+      <div class="metric-group" data-open="1" data-group="neuro">
+        <div class="metric-group-head">
+          <span class="metric-group-title">Cortical rhythms</span>
+          <span class="metric-group-src">eeg · Fp1/Pz</span>
+          <span class="mg-collapse">−</span>
+        </div>
+        <div class="metric-group-body" id="bandsBody">
+          <div class="mrow" style="--mrow-color:#6aa9ff">
+            <div class="mrow-label">δ Delta<span class="band-range">0.5–4 Hz</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-baseband" style="left:10%;right:50%"></div>
+              <div class="mrow-bar-fill" id="band-delta"></div>
+            </div>
+            <div class="mrow-value" id="val-delta">0.18</div>
+          </div>
+          <div class="mrow" style="--mrow-color:#a98bff">
+            <div class="mrow-label">θ Theta<span class="band-range">4–8 Hz</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-baseband" style="left:15%;right:45%"></div>
+              <div class="mrow-bar-fill" id="band-theta"></div>
+            </div>
+            <div class="mrow-value" id="val-theta">0.22</div>
+          </div>
+          <div class="mrow" style="--mrow-color:#7df9ff">
+            <div class="mrow-label">α Alpha<span class="band-range">8–13 Hz</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-baseband" style="left:35%;right:30%"></div>
+              <div class="mrow-bar-fill" id="band-alpha"></div>
+            </div>
+            <div class="mrow-value" id="val-alpha">0.34</div>
+          </div>
+          <div class="mrow" style="--mrow-color:#b4e23f">
+            <div class="mrow-label">β Beta<span class="band-range">13–30 Hz</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-baseband" style="left:30%;right:45%"></div>
+              <div class="mrow-bar-fill" id="band-beta"></div>
+            </div>
+            <div class="mrow-value" id="val-beta">0.20</div>
+          </div>
+          <div class="mrow" style="--mrow-color:#ff8a3d">
+            <div class="mrow-label">γ Gamma<span class="band-range">30–80 Hz</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-baseband" style="left:15%;right:70%"></div>
+              <div class="mrow-bar-fill" id="band-gamma"></div>
+            </div>
+            <div class="mrow-value" id="val-gamma">0.06</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Autonomic -->
+      <div class="metric-group" data-open="1" data-group="autonomic">
+        <div class="metric-group-head">
+          <span class="metric-group-title">Autonomic</span>
+          <span class="metric-group-src">ecg · resp · eda</span>
+          <span class="mg-collapse">−</span>
+        </div>
+        <div class="metric-group-body" id="autonomicBody">
+          <div class="mrow" style="--mrow-color:#ff4e7d">
+            <div class="mrow-label">HR<span class="band-range">bpm</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-baseband" style="left:20%;right:55%"></div>
+              <div class="mrow-bar-fill" id="auto-hr"></div>
+            </div>
+            <div class="mrow-value" id="val-hr">72<span class="mrow-unit">bpm</span></div>
+          </div>
+          <div class="mrow" style="--mrow-color:#ff6b4a">
+            <div class="mrow-label">RMSSD<span class="band-range">HRV · ms</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-baseband" style="left:30%;right:30%"></div>
+              <div class="mrow-bar-fill" id="auto-rmssd"></div>
+            </div>
+            <div class="mrow-value" id="val-rmssd">42<span class="mrow-unit">ms</span></div>
+          </div>
+          <div class="mrow" style="--mrow-color:#c6a1ff">
+            <div class="mrow-label">LF/HF<span class="band-range">sympathetic ←→ parasymp</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-bar-mid"></div>
+              <div class="mrow-baseband bipolar" style="left:42%;right:38%"></div>
+              <div class="mrow-bar-fill" id="auto-lfhf"></div>
+            </div>
+            <div class="mrow-value" id="val-lfhf">1.82</div>
+          </div>
+          <div class="mrow" style="--mrow-color:#6bffc6">
+            <div class="mrow-label">Resp<span class="band-range">breaths/min</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-baseband" style="left:25%;right:50%"></div>
+              <div class="mrow-bar-fill" id="auto-resp"></div>
+            </div>
+            <div class="mrow-value" id="val-resp">14.0<span class="mrow-unit">bpm</span></div>
+          </div>
+          <div class="mrow" style="--mrow-color:#c6a1ff">
+            <div class="mrow-label">EDA<span class="band-range">SCL · µS</span></div>
+            <div class="mrow-bar">
+              <div class="mrow-baseband" style="left:10%;right:60%"></div>
+              <div class="mrow-bar-fill" id="auto-eda"></div>
+            </div>
+            <div class="mrow-value" id="val-eda">5.20<span class="mrow-unit">µS</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Constructs -->
+      <div class="metric-group" data-open="1" data-group="mental">
+        <div class="metric-group-head">
+          <span class="metric-group-title">Latent constructs</span>
+          <span class="metric-group-src">multimodal fusion · tap for why</span>
+          <span class="mg-collapse">−</span>
+        </div>
+        <div class="metric-group-body">
+          <div class="construct-grid" id="constructGrid"></div>
+        </div>
+      </div>
+
+      <!-- Intervention panel -->
+      <div class="intervention" id="interventionPanel">
+        <div class="interv-header">
+          <span class="interv-title">Closed-loop intervention</span>
+          <span class="interv-mode">VNS · AUDIO · LIGHT</span>
+        </div>
+        <div id="interventionRows"></div>
+        <div class="response-timeline" id="responsePanel">
+          <div class="response-timeline-head">
+            <span class="rt-title">Vagal response</span>
+            <div class="rt-tags">
+              <span class="rt-tag pre">PRE 30s</span>
+              <span class="rt-tag post">POST 60s</span>
+              <span class="rt-effect" id="rtEffect">Δ · d = +0.41</span>
+            </div>
+            <span class="rt-timer" id="rtTimer">T+42s</span>
+          </div>
+          <canvas id="responseCanvas" width="320" height="64"></canvas>
+          <div class="response-meta">
+            <span>HRV <b id="rmMetric">+18%</b></span>
+            <span>HR <b id="rmHr">−8bpm</b></span>
+            <span>RESP <b id="rmResp">−2.3/min</b></span>
+            <span>Latency <b id="rmLat">14s</b></span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ============================================================ -->
+  <!-- BOTTOM BAR -->
+  <!-- ============================================================ -->
+  <footer class="bottombar">
+    <div class="timeline" id="timeline">
+      <div class="tl-track"></div>
+      <div class="tl-cursor" id="tlCursor"></div>
+      <div id="tlMarkers"></div>
+    </div>
+    <div class="bottombar-right">
+      <div class="bb-item">SNR <strong id="bbSnr">28dB</strong></div>
+      <div class="bb-item">ARTIFACT <strong id="bbArt">2.1%</strong></div>
+      <div class="bb-item">SAMPLES <strong id="bbSamples">512k</strong></div>
+      <div class="bb-item">LAT <strong id="bbLat">14ms</strong></div>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- TWEAKS PANEL (edit-mode) -->
+<!-- ============================================================ -->
+<div class="tweaks" id="tweaksPanel" style="display:none">
+  <div class="tweaks-head">Tweaks</div>
+  <div class="tw-row">
+    <label>Living body</label>
+    <input type="checkbox" id="tw-living" checked>
+  </div>
+  <div class="tw-row">
+    <label>Propagation</label>
+    <input type="checkbox" id="tw-prop" checked>
+  </div>
+  <div class="tw-row">
+    <label>Heatmap</label>
+    <input type="checkbox" id="tw-heat" checked>
+  </div>
+  <div class="tw-row">
+    <label>Demo speed</label>
+    <select id="tw-speed">
+      <option value="0.5">0.5×</option>
+      <option value="1" selected>1×</option>
+      <option value="2">2×</option>
+      <option value="4">4×</option>
+    </select>
+  </div>
+  <div class="tw-row">
+    <label>Color temp</label>
+    <select id="tw-palette">
+      <option value="cool" selected>cool</option>
+      <option value="warm">warm</option>
+      <option value="mono">mono</option>
+    </select>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TWEAK DEFAULTS (editmode-editable) -->
+<!-- ============================================================ -->
+<script>
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "living": true,
+  "propagation": false,
+  "heatmap": false,
+  "speed": 0.5,
+  "palette": "cool"
+}/*EDITMODE-END*/;
+</script>
+
+<!-- Inlined for sandbox serving reliability -->
+<!-- signals.js -->
+<script>
+// ============================================================
+//  SIGNALS — procedural waveform generators + modality specs
+// ============================================================
+
+// Shared pulse state (drives living body + PPG + heartbeat particles)
+window.SIG = {
+  hrBpm: 72,
+  resp: 14,      // breaths/min
+  alphaPhase: 0, // 0..2pi for EEG alpha
+  edaPhase: 0,
+  emgEnv: 0.3,
+  lastBeatT: 0,
+  beatInterval: 60/72*1000,
+  phase: 0,      // within-beat phase 0..1
+  breathPhase: 0,// 0..1 inhale->exhale
+  hrvPhase: 0,
+};
+
+// Tick every frame from main loop
+SIG.tick = function(now) {
+  // Heartbeat tick (advance phase using current hrBpm)
+  const ms = now - (SIG._last || now);
+  SIG._last = now;
+  SIG.beatInterval = 60 / SIG.hrBpm * 1000;
+  SIG.phase += ms / SIG.beatInterval;
+  if (SIG.phase >= 1) {
+    SIG.phase -= 1;
+    SIG.lastBeatT = now;
+  }
+  SIG.breathPhase = (SIG.breathPhase + ms/1000 * (SIG.resp/60)) % 1;
+  SIG.alphaPhase = (SIG.alphaPhase + ms/1000 * 10 * Math.PI * 2) % (Math.PI*2);
+  SIG.edaPhase   = (SIG.edaPhase   + ms/1000 * 0.3 * Math.PI * 2) % (Math.PI*2);
+  // EMG envelope wanders slightly
+  SIG.emgEnv += ((0.2 + Math.abs(Math.sin(now/2000))*0.3) - SIG.emgEnv) * 0.04;
+};
+
+// ============================================================
+//  WAVEFORM GENERATORS (n samples)
+// ============================================================
+function eegGen(n, t) {
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (t + i) / n;
+    const alpha = Math.sin(x * 12 * Math.PI * 2) * 0.35;
+    const beta  = Math.sin(x * 24 * Math.PI * 2 + 0.7) * 0.18;
+    const theta = Math.sin(x * 5  * Math.PI * 2 + 2.1) * 0.22;
+    out[i] = alpha + beta + theta + (Math.random()-0.5)*0.3;
+  }
+  return out;
+}
+function ecgGen(n, t) {
+  const out = new Float32Array(n);
+  const hr = SIG.hrBpm;
+  const period = n / (hr/60 * 2);
+  for (let i = 0; i < n; i++) {
+    const p = (i + t*5) % period;
+    const r = p / period;
+    let v = 0;
+    if (r < 0.08) v = Math.sin(r/0.08 * Math.PI) * 0.15;
+    else if (r > 0.18 && r < 0.22) v = -0.2;
+    else if (r > 0.22 && r < 0.27) v = Math.sin((r-0.22)/0.05 * Math.PI) * 1.2;
+    else if (r > 0.27 && r < 0.31) v = -0.35;
+    else if (r > 0.45 && r < 0.58) v = Math.sin((r-0.45)/0.13 * Math.PI) * 0.3;
+    v += (Math.random()-0.5)*0.04;
+    out[i] = v;
+  }
+  return out;
+}
+function respGen(n, t) {
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (t + i) / n;
+    out[i] = Math.sin(x * 2 * Math.PI * 2) * 0.7 + (Math.random()-0.5)*0.05;
+  }
+  return out;
+}
+function ppgGen(n, t) {
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i + t*4) / n;
+    const beat = Math.sin(x * 10 * Math.PI * 2);
+    const dicrotic = Math.sin(x * 10 * Math.PI * 2 + Math.PI * 0.6) * 0.3;
+    out[i] = (Math.max(0, beat) - 0.2 + dicrotic*0.3) + (Math.random()-0.5)*0.03;
+  }
+  return out;
+}
+function edaGen(n, t) {
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (t + i) / n;
+    out[i] = 0.3 + Math.sin(x * Math.PI * 0.6) * 0.35 + (Math.random()-0.5)*0.02;
+  }
+  return out;
+}
+function emgGen(n, t) {
+  const out = new Float32Array(n);
+  const env = SIG.emgEnv;
+  for (let i = 0; i < n; i++) out[i] = (Math.random()-0.5) * env * 2;
+  return out;
+}
+function imuGen(n, t) {
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (t + i) / n;
+    out[i] = Math.sin(x * 6 * Math.PI * 2) * 0.6 + (Math.random()-0.5)*0.1;
+  }
+  return out;
+}
+function hrvGen(n, t) {
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (t + i) / n;
+    out[i] = Math.sin(x * Math.PI * 1.5) * 0.5 + Math.sin(x * Math.PI * 4.3 + 1) * 0.2;
+  }
+  return out;
+}
+
+// Expose
+window.GEN = { eegGen, ecgGen, respGen, ppgGen, edaGen, emgGen, imuGen, hrvGen };
+
+// ============================================================
+//  MODALITIES — waveform cards
+// ============================================================
+window.MODALITIES = [
+  { id:'eeg',  label:'EEG',  ch:'Fp1',     anchor:'head',      device:'muse',    color:'#7df9ff', unit:'µV',   quality:'ok',   valueFn:()=> (4 + Math.sin(Date.now()/400)*2).toFixed(1),              gen:'eegGen' },
+  { id:'eeg2', label:'EEG',  ch:'Pz',      anchor:'head',      device:'muse',    color:'#c6a1ff', unit:'µV',   quality:'warn', valueFn:()=> (3 + Math.sin(Date.now()/500+1)*2).toFixed(1),            gen:'eegGen' },
+  { id:'ecg',  label:'ECG',  ch:'Lead II', anchor:'heart',     device:'polar',   color:'#ff4e7d', unit:'BPM',  quality:'ok',   valueFn:()=> Math.round(SIG.hrBpm),                                    gen:'ecgGen' },
+  { id:'resp', label:'RESP', ch:'Thorax',  anchor:'lungs',     device:'polar',   color:'#6bffc6', unit:'bpm',  quality:'ok',   valueFn:()=> SIG.resp.toFixed(1),                                      gen:'respGen' },
+  { id:'ppg',  label:'PPG',  ch:'Wrist',   anchor:'skinWrist', device:'empatica',color:'#ff8a3d', unit:'SpO₂', quality:'ok',   valueFn:()=> (98 + Math.sin(Date.now()/4000)).toFixed(1)+'%',          gen:'ppgGen' },
+  { id:'eda',  label:'EDA',  ch:'Palm',    anchor:'armR',      device:'empatica',color:'#c6a1ff', unit:'µS',   quality:'ok',   valueFn:()=> (5.2 + Math.sin(Date.now()/5000)*0.8).toFixed(2),        gen:'edaGen' },
+  { id:'emg',  label:'EMG',  ch:'Flexor',  anchor:'armL',      device:'xhro',    color:'#b4e23f', unit:'mV',   quality:'warn', valueFn:()=> (0.4 + Math.abs(Math.sin(Date.now()/600))*0.3).toFixed(2),gen:'emgGen' },
+  { id:'imu',  label:'IMU',  ch:'Accel',   anchor:'foot',      device:'xhro',    color:'#ffd447', unit:'g',    quality:'ok',   valueFn:()=> (1 + Math.sin(Date.now()/200)*0.15).toFixed(2),          gen:'imuGen' },
+  { id:'hrv',  label:'HRV',  ch:'RMSSD',   anchor:'gut',       device:'polar',   color:'#ff6b4a', unit:'ms',   quality:'ok',   valueFn:()=> Math.round(42 + Math.sin(Date.now()/6000)*6),            gen:'hrvGen' },
+];
+
+</script>
+
+<!-- postures.js -->
+<script>
+// ============================================================
+//  POSTURES — anatomical silhouettes with anchors & heat regions
+// ============================================================
+// Extended from v1 with breath/heart pivot points for live body animation.
+window.POSTURES = {
+  stand: {
+    body: `
+      <defs>
+        <radialGradient id="haloGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(125,249,255,0.25)"/>
+          <stop offset="50%" stop-color="rgba(125,249,255,0.06)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+        </radialGradient>
+        <radialGradient id="heartGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(255,78,125,0.4)"/>
+          <stop offset="100%" stop-color="rgba(255,78,125,0)"/>
+        </radialGradient>
+        <linearGradient id="bodyFill" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="rgba(125,249,255,0.04)"/>
+          <stop offset="50%" stop-color="rgba(198,161,255,0.03)"/>
+          <stop offset="100%" stop-color="rgba(255,78,125,0.02)"/>
+        </linearGradient>
+        <filter id="blur1"><feGaussianBlur stdDeviation="8"/></filter>
+      </defs>
+
+      <ellipse cx="400" cy="450" rx="280" ry="380" fill="url(#haloGrad)"/>
+      <circle id="heartPulse" cx="395" cy="400" r="80" fill="url(#heartGlow)" filter="url(#blur1)"/>
+
+      <g id="heatmapLayer" class="heatmap-layer"></g>
+
+      <g id="silhouette" stroke="rgba(232,236,245,0.55)" stroke-width="1.2" fill="url(#bodyFill)">
+        <g id="thorax">
+          <ellipse cx="400" cy="150" rx="58" ry="70"/>
+          <path d="M 380 210 Q 380 235 385 250 L 415 250 Q 420 235 420 210 Z"/>
+          <path d="M 330 255 Q 310 270 305 310 L 295 430 Q 295 510 310 570 L 330 620 L 470 620 L 490 570 Q 505 510 505 430 L 495 310 Q 490 270 470 255 Z"/>
+        </g>
+        <path d="M 305 300 Q 275 315 260 370 L 250 480 Q 248 540 255 600 L 265 660 Q 268 680 258 690 L 248 690 Q 238 680 236 660 L 220 540 Q 218 470 228 400 Q 238 330 260 290 Q 280 265 305 260 Z"/>
+        <path d="M 495 300 Q 525 315 540 370 L 550 480 Q 552 540 545 600 L 535 660 Q 532 680 542 690 L 552 690 Q 562 680 564 660 L 580 540 Q 582 470 572 400 Q 562 330 540 290 Q 520 265 495 260 Z"/>
+        <path d="M 330 620 L 340 780 Q 342 820 348 850 L 360 870 L 380 870 L 385 850 Q 382 800 378 760 L 380 620 Z"/>
+        <path d="M 470 620 L 460 780 Q 458 820 452 850 L 440 870 L 420 870 L 415 850 Q 418 800 422 760 L 420 620 Z"/>
+      </g>
+
+      <g id="brainGlyph" opacity="0.55">
+        <path d="M 360 130 Q 370 100 400 100 Q 430 100 440 130 M 360 150 Q 370 140 380 150 Q 390 140 400 150 Q 410 140 420 150 Q 430 140 440 150 M 370 170 L 430 170" stroke="#7df9ff" stroke-width="1" fill="none"/>
+      </g>
+
+      <path d="M 400 255 L 400 620" stroke="rgba(198,161,255,0.3)" stroke-width="1" stroke-dasharray="2 3"/>
+
+      <g id="pulseRings"></g>
+      <g id="livingLayer"></g>
+    `,
+    anchors: {
+      head:{x:400,y:150,side:'left'}, heart:{x:385,y:400,side:'right'},
+      lungs:{x:410,y:360,side:'left'}, gut:{x:400,y:510,side:'right'},
+      armL:{x:245,y:555,side:'left'}, armR:{x:555,y:555,side:'right'},
+      skinWrist:{x:565,y:660,side:'right'}, foot:{x:370,y:860,side:'left'},
+    },
+    heatRegions: {
+      prefrontal:{x:400,y:130,r:55}, amygdala:{x:400,y:175,r:38},
+      heart:{x:395,y:400,r:70}, lungs:{x:400,y:350,r:65},
+      adrenal:{x:400,y:480,r:45}, gut:{x:400,y:540,r:55},
+      palmL:{x:248,y:688,r:28}, palmR:{x:552,y:688,r:28},
+    },
+    chest:{x:400,y:380,pivotY:300},
+    heartPt:{x:395,y:400},
+    propPaths:{
+      heartWrist:{from:[395,400], to:[555,660], ctrl:[520,480]},
+      brainHeart:{from:[400,170], to:[395,400], ctrl:[400,280]},
+      brainPalmL:{from:[400,170], to:[248,688], ctrl:[320,420]},
+    }
+  },
+
+  sit: {
+    body: `
+      <defs>
+        <radialGradient id="haloGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(125,249,255,0.25)"/>
+          <stop offset="50%" stop-color="rgba(125,249,255,0.05)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+        </radialGradient>
+        <radialGradient id="heartGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(255,78,125,0.4)"/>
+          <stop offset="100%" stop-color="rgba(255,78,125,0)"/>
+        </radialGradient>
+        <linearGradient id="bodyFill" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="rgba(125,249,255,0.04)"/>
+          <stop offset="100%" stop-color="rgba(255,78,125,0.02)"/>
+        </linearGradient>
+        <filter id="blur1"><feGaussianBlur stdDeviation="8"/></filter>
+      </defs>
+      <ellipse cx="400" cy="470" rx="260" ry="340" fill="url(#haloGrad)"/>
+      <circle id="heartPulse" cx="395" cy="410" r="80" fill="url(#heartGlow)" filter="url(#blur1)"/>
+      <g id="heatmapLayer" class="heatmap-layer"></g>
+      <g stroke="rgba(232,236,245,0.55)" stroke-width="1.2" fill="url(#bodyFill)">
+        <g id="thorax">
+          <ellipse cx="400" cy="180" rx="56" ry="68"/>
+          <path d="M 380 240 Q 380 260 385 275 L 415 275 Q 420 260 420 240 Z"/>
+          <path d="M 330 280 Q 310 295 305 335 L 300 460 Q 300 530 318 580 L 340 620 L 470 620 L 492 580 Q 510 530 510 460 L 505 335 Q 500 295 480 280 Z"/>
+        </g>
+        <path d="M 305 320 Q 275 340 260 400 L 258 480 Q 270 530 310 570 Q 340 590 360 600 L 370 585 Q 348 570 325 550 Q 300 520 295 470 Q 295 400 315 360 Q 325 340 335 330 Z"/>
+        <path d="M 495 320 Q 525 340 540 400 L 542 480 Q 530 530 490 570 Q 460 590 440 600 L 430 585 Q 452 570 475 550 Q 500 520 505 470 Q 505 400 485 360 Q 475 340 465 330 Z"/>
+        <path d="M 340 620 L 330 640 Q 320 660 320 680 L 325 710 L 580 710 Q 590 710 595 700 L 590 680 Q 580 660 560 650 L 470 620 Z"/>
+        <path d="M 325 710 L 330 860 L 380 860 L 385 710 Z"/>
+        <path d="M 520 710 L 525 860 L 575 860 L 580 710 Z"/>
+      </g>
+      <g id="brainGlyph" opacity="0.55">
+        <path d="M 360 160 Q 370 130 400 130 Q 430 130 440 160 M 360 180 Q 370 170 380 180 Q 390 170 400 180 Q 410 170 420 180 Q 430 170 440 180 M 370 200 L 430 200" stroke="#7df9ff" stroke-width="1" fill="none"/>
+      </g>
+      <path d="M 400 280 L 400 620" stroke="rgba(198,161,255,0.3)" stroke-width="1" stroke-dasharray="2 3"/>
+      <g id="pulseRings"></g>
+      <g id="livingLayer"></g>
+    `,
+    anchors: {
+      head:{x:400,y:180,side:'left'}, heart:{x:385,y:410,side:'right'},
+      lungs:{x:410,y:370,side:'left'}, gut:{x:400,y:520,side:'right'},
+      armL:{x:335,y:595,side:'left'}, armR:{x:465,y:595,side:'right'},
+      skinWrist:{x:440,y:605,side:'right'}, foot:{x:355,y:855,side:'left'},
+    },
+    heatRegions: {
+      prefrontal:{x:400,y:160,r:55}, amygdala:{x:400,y:205,r:38},
+      heart:{x:395,y:410,r:70}, lungs:{x:400,y:360,r:65},
+      adrenal:{x:400,y:490,r:45}, gut:{x:400,y:550,r:55},
+      palmL:{x:360,y:602,r:28}, palmR:{x:440,y:602,r:28},
+    },
+    chest:{x:400,y:390,pivotY:320},
+    heartPt:{x:395,y:410},
+    propPaths:{
+      heartWrist:{from:[395,410], to:[440,605], ctrl:[430,500]},
+      brainHeart:{from:[400,200], to:[395,410], ctrl:[400,300]},
+      brainPalmL:{from:[400,200], to:[360,602], ctrl:[380,430]},
+    }
+  },
+
+  walk: {
+    body: `
+      <defs>
+        <radialGradient id="haloGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(180,226,63,0.2)"/>
+          <stop offset="50%" stop-color="rgba(125,249,255,0.05)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+        </radialGradient>
+        <radialGradient id="heartGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(255,78,125,0.5)"/>
+          <stop offset="100%" stop-color="rgba(255,78,125,0)"/>
+        </radialGradient>
+        <linearGradient id="bodyFill" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="rgba(125,249,255,0.04)"/>
+          <stop offset="100%" stop-color="rgba(180,226,63,0.03)"/>
+        </linearGradient>
+        <filter id="blur1"><feGaussianBlur stdDeviation="8"/></filter>
+      </defs>
+      <ellipse cx="400" cy="450" rx="290" ry="380" fill="url(#haloGrad)"/>
+      <circle id="heartPulse" cx="395" cy="400" r="80" fill="url(#heartGlow)" filter="url(#blur1)"/>
+      <g id="heatmapLayer" class="heatmap-layer"></g>
+      <g stroke="rgba(232,236,245,0.55)" stroke-width="1.2" fill="url(#bodyFill)">
+        <g id="thorax">
+          <ellipse cx="400" cy="150" rx="58" ry="70"/>
+          <path d="M 380 210 Q 380 235 385 250 L 415 250 Q 420 235 420 210 Z"/>
+          <path d="M 330 255 Q 310 270 305 310 L 295 430 Q 295 510 310 570 L 330 620 L 470 620 L 490 570 Q 505 510 505 430 L 495 310 Q 490 270 470 255 Z"/>
+        </g>
+        <path d="M 305 300 Q 270 320 250 380 L 235 470 Q 225 540 220 600 L 210 660 Q 205 680 215 688 L 228 688 Q 240 680 245 660 L 262 540 Q 275 470 288 400 Q 300 340 315 290 Z"/>
+        <path d="M 495 300 Q 530 320 555 380 L 580 480 Q 595 540 605 600 L 620 650 Q 625 668 615 678 L 602 678 Q 592 670 587 650 L 568 540 Q 555 470 540 400 Q 525 340 505 290 Z"/>
+        <path d="M 330 620 L 310 780 Q 305 820 310 850 L 320 868 L 345 868 L 350 850 Q 360 800 370 760 L 380 620 Z"/>
+        <path d="M 470 620 L 480 770 Q 490 815 500 845 L 510 860 L 530 860 L 530 840 Q 518 790 508 750 L 495 620 Z"/>
+      </g>
+      <g id="brainGlyph" opacity="0.55">
+        <path d="M 360 130 Q 370 100 400 100 Q 430 100 440 130 M 360 150 Q 370 140 380 150 Q 390 140 400 150 Q 410 140 420 150 Q 430 140 440 150 M 370 170 L 430 170" stroke="#7df9ff" stroke-width="1" fill="none"/>
+      </g>
+      <path d="M 400 255 L 400 620" stroke="rgba(198,161,255,0.3)" stroke-width="1" stroke-dasharray="2 3"/>
+      <g id="pulseRings"></g>
+      <g id="livingLayer"></g>
+    `,
+    anchors: {
+      head:{x:400,y:150,side:'left'}, heart:{x:385,y:400,side:'right'},
+      lungs:{x:410,y:360,side:'left'}, gut:{x:400,y:510,side:'right'},
+      armL:{x:220,y:600,side:'left'}, armR:{x:600,y:600,side:'right'},
+      skinWrist:{x:615,y:670,side:'right'}, foot:{x:320,y:860,side:'left'},
+    },
+    heatRegions: {
+      prefrontal:{x:400,y:130,r:55}, amygdala:{x:400,y:175,r:38},
+      heart:{x:395,y:400,r:72}, lungs:{x:400,y:350,r:68},
+      adrenal:{x:400,y:480,r:45}, gut:{x:400,y:540,r:55},
+      palmL:{x:218,y:680,r:28}, palmR:{x:610,y:670,r:28},
+    },
+    chest:{x:400,y:380,pivotY:300},
+    heartPt:{x:395,y:400},
+    propPaths:{
+      heartWrist:{from:[395,400], to:[615,670], ctrl:[560,480]},
+      brainHeart:{from:[400,170], to:[395,400], ctrl:[400,280]},
+      brainPalmL:{from:[400,170], to:[218,680], ctrl:[310,420]},
+    }
+  },
+
+  run: {
+    body: `
+      <defs>
+        <radialGradient id="haloGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(255,143,61,0.3)"/>
+          <stop offset="50%" stop-color="rgba(255,78,125,0.08)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+        </radialGradient>
+        <radialGradient id="heartGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(255,78,125,0.65)"/>
+          <stop offset="100%" stop-color="rgba(255,78,125,0)"/>
+        </radialGradient>
+        <linearGradient id="bodyFill" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="rgba(255,143,61,0.06)"/>
+          <stop offset="100%" stop-color="rgba(255,78,125,0.04)"/>
+        </linearGradient>
+        <filter id="blur1"><feGaussianBlur stdDeviation="10"/></filter>
+      </defs>
+      <ellipse cx="400" cy="440" rx="310" ry="400" fill="url(#haloGrad)"/>
+      <circle id="heartPulse" cx="395" cy="405" r="95" fill="url(#heartGlow)" filter="url(#blur1)"/>
+      <g id="heatmapLayer" class="heatmap-layer"></g>
+      <g stroke="rgba(232,236,245,0.55)" stroke-width="1.2" fill="url(#bodyFill)" transform="rotate(-6 400 450)">
+        <g id="thorax">
+          <ellipse cx="400" cy="150" rx="58" ry="70"/>
+          <path d="M 380 210 Q 380 235 385 250 L 415 250 Q 420 235 420 210 Z"/>
+          <path d="M 330 255 Q 310 270 305 310 L 295 430 Q 295 510 310 570 L 330 620 L 470 620 L 490 570 Q 505 510 505 430 L 495 310 Q 490 270 470 255 Z"/>
+        </g>
+        <path d="M 305 300 Q 265 310 230 340 L 200 380 Q 190 400 200 415 L 215 420 Q 230 410 250 390 Q 280 360 310 340 Z"/>
+        <path d="M 495 300 Q 535 310 570 340 L 600 380 Q 610 400 600 415 L 585 420 Q 570 410 550 390 Q 520 360 490 340 Z"/>
+        <path d="M 330 620 L 290 740 Q 270 770 250 780 L 235 790 Q 225 800 232 810 L 248 808 Q 270 800 295 780 Q 330 750 360 720 L 380 620 Z"/>
+        <path d="M 470 620 L 490 780 Q 505 820 520 850 L 540 865 L 558 858 L 555 840 Q 540 800 525 760 L 495 620 Z"/>
+      </g>
+      <g id="brainGlyph" opacity="0.7" transform="rotate(-6 400 450)">
+        <path d="M 360 130 Q 370 100 400 100 Q 430 100 440 130 M 360 150 Q 370 140 380 150 Q 390 140 400 150 Q 410 140 420 150 Q 430 140 440 150 M 370 170 L 430 170" stroke="#ff8a3d" stroke-width="1" fill="none"/>
+      </g>
+      <g id="pulseRings"></g>
+      <g id="livingLayer"></g>
+    `,
+    anchors: {
+      head:{x:370,y:160,side:'left'}, heart:{x:390,y:410,side:'right'},
+      lungs:{x:410,y:370,side:'left'}, gut:{x:420,y:520,side:'right'},
+      armL:{x:200,y:400,side:'left'}, armR:{x:600,y:400,side:'right'},
+      skinWrist:{x:615,y:410,side:'right'}, foot:{x:260,y:790,side:'left'},
+    },
+    heatRegions: {
+      prefrontal:{x:375,y:145,r:52}, amygdala:{x:380,y:190,r:38},
+      heart:{x:395,y:405,r:78}, lungs:{x:400,y:355,r:72},
+      adrenal:{x:410,y:480,r:50}, gut:{x:420,y:540,r:55},
+      palmL:{x:210,y:410,r:30}, palmR:{x:610,y:410,r:30},
+      quadL:{x:310,y:720,r:38}, quadR:{x:490,y:720,r:38},
+    },
+    chest:{x:395,y:380,pivotY:300},
+    heartPt:{x:395,y:405},
+    propPaths:{
+      heartWrist:{from:[395,405], to:[615,410], ctrl:[530,380]},
+      brainHeart:{from:[380,190], to:[395,405], ctrl:[395,290]},
+      brainPalmL:{from:[380,190], to:[210,410], ctrl:[295,300]},
+    }
+  }
+};
+
+// Region display names
+window.REGION_NAMES = {
+  head: 'Head · Cortex',
+  heart: 'Heart',
+  lungs: 'Lungs',
+  gut: 'Enteric',
+  armL: 'Arm L',
+  armR: 'Arm R',
+  skinWrist: 'Wrist R',
+  foot: 'Foot',
+};
+
+</script>
+
+<!-- metrics.js -->
+<script>
+// ============================================================
+//  METRICS — bands, autonomic, latent constructs + attribution
+// ============================================================
+const bands = {
+  delta:{val:0.18,target:0.18,el:'band-delta',valEl:'val-delta',max:0.6},
+  theta:{val:0.22,target:0.22,el:'band-theta',valEl:'val-theta',max:0.5},
+  alpha:{val:0.34,target:0.34,el:'band-alpha',valEl:'val-alpha',max:0.6},
+  beta: {val:0.20,target:0.20,el:'band-beta', valEl:'val-beta', max:0.4},
+  gamma:{val:0.06,target:0.06,el:'band-gamma',valEl:'val-gamma',max:0.2},
+};
+const autonomic = {
+  hr:   {val:72,  target:72,  el:'auto-hr',   valEl:'val-hr',   min:40, max:180, fmt:v=>Math.round(v)},
+  rmssd:{val:42,  target:42,  el:'auto-rmssd',valEl:'val-rmssd',min:5,  max:120, fmt:v=>Math.round(v)},
+  lfhf: {val:1.82,target:1.82,el:'auto-lfhf', valEl:'val-lfhf', min:0.4,max:4.0, fmt:v=>v.toFixed(2), bipolar:true, midpoint:1.0},
+  resp: {val:14,  target:14,  el:'auto-resp', valEl:'val-resp', min:6,  max:30,  fmt:v=>v.toFixed(1)},
+  eda:  {val:5.2, target:5.2, el:'auto-eda',  valEl:'val-eda',  min:0.5,max:20,  fmt:v=>v.toFixed(2)},
+};
+const constructs = {
+  stress:    {val:0.28,target:0.28,bipolar:false,tag:'acute',       accent:'#ffbf3c'},
+  emotion:   {val:0.62,target:0.62,bipolar:true, tag:'valence',     accent:'#ff4e7d'},
+  fatigue:   {val:0.34,target:0.34,bipolar:false,tag:'mental',      accent:'#ff6b4a'},
+  attention: {val:0.68,target:0.68,bipolar:false,tag:'focus',       accent:'#7df9ff'},
+  cogload:   {val:0.41,target:0.41,bipolar:false,tag:'n-back eq.',  accent:'#b4e23f'},
+};
+const sparkHistory = {};
+Object.keys(constructs).forEach(k => sparkHistory[k] = new Array(48).fill(constructs[k].val));
+
+// Baseline snapshot (used by "vs Base" scope)
+const baseline = {
+  bands: {delta:0.19,theta:0.22,alpha:0.36,beta:0.18,gamma:0.05},
+  autonomic: {hr:68,rmssd:48,lfhf:1.4,resp:13,eda:4.8},
+  constructs: {stress:0.22,emotion:0.58,fatigue:0.30,attention:0.70,cogload:0.38},
+};
+
+// ============================================================
+// Target profiles per scenario
+// ============================================================
+const TARGET_PROFILES = {
+  sit:{
+    bands:{delta:[0.1,0.2],theta:[0.15,0.25],alpha:[0.30,0.45],beta:[0.15,0.25],gamma:[0.04,0.09]},
+    autonomic:{hr:[58,72],rmssd:[40,80],lfhf:[0.6,1.4],resp:[10,14],eda:[2,5]},
+    constructs:{stress:[0.1,0.3],emotion:[0.55,0.75],fatigue:[0.2,0.4],attention:[0.55,0.85],cogload:[0.15,0.45]},
+  },
+  stand:{
+    bands:{delta:[0.1,0.2],theta:[0.12,0.22],alpha:[0.25,0.38],beta:[0.18,0.3],gamma:[0.05,0.1]},
+    autonomic:{hr:[68,84],rmssd:[30,55],lfhf:[1.2,2.2],resp:[12,16],eda:[3,7]},
+    constructs:{stress:[0.2,0.4],emotion:[0.5,0.7],fatigue:[0.25,0.45],attention:[0.5,0.75],cogload:[0.25,0.55]},
+  },
+  walk:{
+    bands:{delta:[0.08,0.18],theta:[0.1,0.2],alpha:[0.2,0.32],beta:[0.22,0.32],gamma:[0.07,0.12]},
+    autonomic:{hr:[95,120],rmssd:[20,40],lfhf:[1.8,2.8],resp:[16,22],eda:[5,10]},
+    constructs:{stress:[0.3,0.5],emotion:[0.55,0.8],fatigue:[0.3,0.5],attention:[0.45,0.7],cogload:[0.3,0.55]},
+  },
+  run:{
+    bands:{delta:[0.06,0.14],theta:[0.08,0.18],alpha:[0.15,0.28],beta:[0.25,0.38],gamma:[0.08,0.15]},
+    autonomic:{hr:[140,175],rmssd:[8,20],lfhf:[2.5,3.6],resp:[22,32],eda:[8,16]},
+    constructs:{stress:[0.45,0.7],emotion:[0.5,0.75],fatigue:[0.4,0.7],attention:[0.4,0.65],cogload:[0.4,0.7]},
+  },
+  stress:{
+    bands:{delta:[0.08,0.14],theta:[0.1,0.18],alpha:[0.15,0.22],beta:[0.28,0.38],gamma:[0.09,0.14]},
+    autonomic:{hr:[88,110],rmssd:[12,25],lfhf:[2.4,3.4],resp:[18,24],eda:[8,14]},
+    constructs:{stress:[0.65,0.88],emotion:[0.25,0.45],fatigue:[0.4,0.6],attention:[0.35,0.55],cogload:[0.5,0.75]},
+  },
+  meditate:{
+    bands:{delta:[0.08,0.15],theta:[0.2,0.32],alpha:[0.4,0.55],beta:[0.1,0.18],gamma:[0.03,0.07]},
+    autonomic:{hr:[52,64],rmssd:[60,100],lfhf:[0.4,0.9],resp:[5,8],eda:[1.5,3]},
+    constructs:{stress:[0.05,0.18],emotion:[0.65,0.85],fatigue:[0.15,0.3],attention:[0.72,0.92],cogload:[0.08,0.25]},
+  },
+};
+
+let activeScenarioOverride = null;
+window.setScenarioOverride = (k) => { activeScenarioOverride = k === 'auto' ? null : k; };
+
+function currentScenarioKey() {
+  if (activeScenarioOverride) return activeScenarioOverride;
+  return window.getCurrentPosture ? window.getCurrentPosture() : 'stand';
+}
+
+function pickTargets() {
+  const key = currentScenarioKey();
+  const profile = TARGET_PROFILES[key] || TARGET_PROFILES.stand;
+  const pick = ([lo,hi]) => lo + Math.random()*(hi-lo);
+  Object.keys(bands).forEach(k => { bands[k].target = pick(profile.bands[k]); });
+  let sum = Object.values(bands).reduce((s,b)=>s+b.target, 0);
+  Object.keys(bands).forEach(k => bands[k].target /= sum);
+  Object.keys(autonomic).forEach(k => autonomic[k].target = pick(profile.autonomic[k]));
+  Object.keys(constructs).forEach(k => constructs[k].target = pick(profile.constructs[k]));
+}
+pickTargets();
+setInterval(pickTargets, 8000);
+
+// ============================================================
+// Construct grid DOM (with attribution panel slots)
+// ============================================================
+function buildConstructGrid() {
+  const g = document.getElementById('constructGrid');
+  g.innerHTML = '';
+  const order = ['stress','attention','emotion','cogload','fatigue'];
+  order.forEach(k => {
+    const c = constructs[k];
+    const el = document.createElement('div');
+    el.className = 'construct-card';
+    el.dataset.c = k;
+    el.style.setProperty('--c-accent', c.accent);
+    if (k==='cogload') el.style.gridColumn = 'span 2';
+    el.innerHTML = `
+      <div class="construct-title">
+        <span>${k==='cogload'?'Cognitive Load': k.charAt(0).toUpperCase()+k.slice(1)}</span>
+        <span class="why">why?</span>
+      </div>
+      <div class="construct-value-row">
+        <span class="construct-value" id="c-${k}">${c.val.toFixed(2)}</span>
+        <span class="construct-delta up" id="d-${k}">+0.00</span>
+      </div>
+      <canvas class="construct-spark" id="spark-${k}"></canvas>
+      <div class="construct-tag">${c.tag}</div>
+      <div class="construct-attrib" id="attrib-${k}"></div>
+    `;
+    g.appendChild(el);
+    el.addEventListener('click', () => toggleAttrib(k, el));
+  });
+}
+
+// Attribution data — which signals drive each construct (SHAP-style)
+const ATTRIBUTION = {
+  stress: [
+    {name:'EDA SCL', src:'eda', sign:+1, mag:0.38},
+    {name:'LF/HF',   src:'lfhf',sign:+1, mag:0.22},
+    {name:'β power', src:'beta',sign:+1, mag:0.18},
+    {name:'RMSSD',   src:'rmssd',sign:-1, mag:0.14},
+    {name:'α power', src:'alpha',sign:-1, mag:0.08},
+  ],
+  attention: [
+    {name:'α/β ratio', src:'ab',  sign:+1, mag:0.32},
+    {name:'θ·γ coup.', src:'tg',  sign:+1, mag:0.24},
+    {name:'HR stability', src:'hrstd', sign:+1, mag:0.16},
+    {name:'EMG (blink)',  src:'emg', sign:-1, mag:0.14},
+    {name:'Pupil σ',   src:'pupil',sign:-1, mag:0.14},
+  ],
+  emotion: [
+    {name:'HRV (HF)', src:'hf',   sign:+1, mag:0.30},
+    {name:'Frontal α asym.', src:'asym', sign:+1, mag:0.26},
+    {name:'Voice prosody', src:'voice', sign:+1, mag:0.18},
+    {name:'EDA phasic',  src:'scr',  sign:-1, mag:0.14},
+    {name:'LF/HF',    src:'lfhf', sign:-1, mag:0.12},
+  ],
+  cogload: [
+    {name:'θ/α ratio', src:'ta',  sign:+1, mag:0.34},
+    {name:'γ power',   src:'gamma',sign:+1, mag:0.22},
+    {name:'Pupil dil.',src:'pupil',sign:+1, mag:0.16},
+    {name:'RESP rate', src:'resp',sign:+1, mag:0.14},
+    {name:'α power',   src:'alpha',sign:-1, mag:0.14},
+  ],
+  fatigue: [
+    {name:'δ+θ power', src:'dt',  sign:+1, mag:0.32},
+    {name:'Blink rate',src:'blink',sign:+1, mag:0.22},
+    {name:'HRV trend', src:'hrvt',sign:-1, mag:0.18},
+    {name:'EMG tonic', src:'emgt',sign:+1, mag:0.14},
+    {name:'SCL slope', src:'scls',sign:-1, mag:0.14},
+  ],
+};
+
+function renderAttrib(k, el) {
+  const slot = el.querySelector('#attrib-'+k);
+  const list = ATTRIBUTION[k];
+  if (!list) return;
+  slot.innerHTML = list.map(a => `
+    <div class="attrib-row">
+      <span class="attrib-name">${a.name}</span>
+      <div class="attrib-bar">
+        <div class="attrib-mid"></div>
+        <div class="attrib-fill ${a.sign<0?'neg':''}" style="${a.sign>0
+          ? `left:50%;width:${a.mag*50}%`
+          : `right:50%;left:${50 - a.mag*50}%;width:${a.mag*50}%`}"></div>
+      </div>
+      <span class="attrib-val">${a.sign>0?'+':'−'}${a.mag.toFixed(2)}</span>
+    </div>
+  `).join('');
+}
+
+function toggleAttrib(k, el) {
+  const open = el.classList.toggle('expanded');
+  if (open) renderAttrib(k, el);
+  // collapse siblings
+  document.querySelectorAll('.construct-card').forEach(c => { if (c !== el) c.classList.remove('expanded'); });
+}
+
+// ============================================================
+// Render
+// ============================================================
+function renderBands() {
+  Object.keys(bands).forEach(k => {
+    const b = bands[k];
+    b.val += (b.target - b.val) * 0.04;
+    const pct = Math.min(1, b.val/b.max)*100;
+    const el = document.getElementById(b.el);
+    if (el) el.style.width = pct + '%';
+    const vEl = document.getElementById(b.valEl);
+    if (vEl) vEl.firstChild.nodeValue = b.val.toFixed(2);
+  });
+}
+function renderAutonomic() {
+  Object.keys(autonomic).forEach(k => {
+    const a = autonomic[k];
+    a.val += (a.target - a.val) * 0.05;
+    const range = a.max - a.min;
+    const el = document.getElementById(a.el);
+    const vEl = document.getElementById(a.valEl);
+    if (a.bipolar) {
+      const midNorm = (a.midpoint-a.min)/range*100;
+      const valNorm = (a.val-a.min)/range*100;
+      if (valNorm>=midNorm) { el.style.left=midNorm+'%'; el.style.width=(valNorm-midNorm)+'%'; }
+      else { el.style.left=valNorm+'%'; el.style.width=(midNorm-valNorm)+'%'; }
+    } else {
+      const pct = Math.min(1,Math.max(0,(a.val-a.min)/range))*100;
+      el.style.left='0%'; el.style.width=pct+'%';
+    }
+    if (vEl) vEl.firstChild.nodeValue = a.fmt(a.val);
+  });
+  // Drive SIG
+  SIG.hrBpm = autonomic.hr.val;
+  SIG.resp = autonomic.resp.val;
+}
+function drawSpark(id, history, color, bipolar) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== canvas.clientWidth*dpr) {
+    canvas.width = canvas.clientWidth*dpr; canvas.height = canvas.clientHeight*dpr;
+  }
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  if (bipolar) {
+    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1*dpr;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+  }
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,color+'50'); grad.addColorStop(1,color+'00');
+  ctx.beginPath(); ctx.moveTo(0,H);
+  for (let i=0;i<history.length;i++) {
+    const x=(i/(history.length-1))*W;
+    const v = bipolar ? (history[i]-0.5)*2 : history[i];
+    const y = bipolar ? H/2 - v*(H*0.4) : H - v*H*0.9;
+    ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W,H); ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+  ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=1.4*dpr;
+  ctx.shadowColor=color; ctx.shadowBlur=5*dpr;
+  for (let i=0;i<history.length;i++) {
+    const x=(i/(history.length-1))*W;
+    const v = bipolar ? (history[i]-0.5)*2 : history[i];
+    const y = bipolar ? H/2 - v*(H*0.4) : H - v*H*0.9;
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke(); ctx.shadowBlur=0;
+}
+function renderConstructs() {
+  Object.keys(constructs).forEach(k => {
+    const c = constructs[k];
+    c.val += (c.target - c.val) * 0.04;
+    sparkHistory[k].push(c.val);
+    if (sparkHistory[k].length > 48) sparkHistory[k].shift();
+    const valEl = document.getElementById('c-'+k);
+    if (!valEl) return;
+    if (c.bipolar) {
+      const signed = (c.val-0.5)*2;
+      valEl.textContent = (signed>=0?'+':'−') + Math.abs(signed).toFixed(2);
+    } else valEl.textContent = c.val.toFixed(2);
+    const hist = sparkHistory[k];
+    const trend = hist[hist.length-1] - hist[Math.max(0,hist.length-10)];
+    const deltaEl = document.getElementById('d-'+k);
+    deltaEl.textContent = (trend>=0?'+':'') + trend.toFixed(2);
+    deltaEl.classList.toggle('up', trend>=0);
+    deltaEl.classList.toggle('down', trend<0);
+    drawSpark('spark-'+k, hist, c.accent, c.bipolar);
+  });
+}
+
+// ============================================================
+// State label provenance — build readable string from metrics
+// ============================================================
+function updateStateLabel() {
+  const hrv = autonomic.rmssd.val;
+  const lfhf = autonomic.lfhf.val;
+  const alpha = bands.alpha.val;
+  const stress = constructs.stress.val;
+  const focus = constructs.attention.val;
+  const cogload = constructs.cogload.val;
+  let label = 'Focused · Relaxed';
+  const prov = [];
+  if (stress > 0.6) { label = 'Stressed · Alert'; prov.push('↑EDA','↓HRV','↑LF/HF'); }
+  else if (stress > 0.4 && focus > 0.6) { label = 'Engaged · Activated'; prov.push('↑β','↑HR'); }
+  else if (focus > 0.75 && cogload < 0.35) { label = 'Flow · Calm'; prov.push('↑α','↑HRV','↓cortex-β'); }
+  else if (focus > 0.6 && alpha > 0.35) { label = 'Focused · Relaxed'; prov.push('↑α','↑HRV','↓LF/HF'); }
+  else if (cogload > 0.55) { label = 'Cognitive Load'; prov.push('↑θ/α','↑γ','↑resp'); }
+  else if (autonomic.hr.val > 120) { label = 'Aroused · High-output'; prov.push('↑HR','↑β','↑EDA'); }
+  else if (stress < 0.2 && autonomic.resp.val < 9) { label = 'Meditative'; prov.push('↑α','↑θ','↓resp','↑HRV'); }
+  else label = 'Balanced';
+  document.getElementById('stateText').textContent = label;
+  document.getElementById('stateProv').textContent = prov.join(' · ') || '—';
+}
+
+function renderMetrics() {
+  renderBands();
+  renderAutonomic();
+  renderConstructs();
+  updateStateLabel();
+}
+
+window.METRICS = { bands, autonomic, constructs, sparkHistory, baseline };
+window.renderMetrics = renderMetrics;
+window.buildConstructGrid = buildConstructGrid;
+
+</script>
+
+<!-- body.js -->
+<script>
+// ============================================================
+//  BODY — silhouette, living pulses, waveform nodes, connectors
+// ============================================================
+const bodySvg = document.getElementById('bodySvg');
+const waveContainer = document.getElementById('waveNodes');
+const connectorSvg = document.getElementById('connectorSvg');
+const propCanvas = document.getElementById('propCanvas');
+const propCtx = propCanvas.getContext('2d');
+let waveNodes = [];
+let currentPosture = 'stand';
+
+// ============================================================
+// Heat state (activation map driven by metrics)
+// ============================================================
+const heatState = {
+  prefrontal:0.3, amygdala:0.3, heart:0.4, lungs:0.3,
+  adrenal:0.2, gut:0.3, palmL:0.2, palmR:0.2, quadL:0, quadR:0
+};
+function heatColor(level) {
+  const stops = [
+    {t:0.0,r:107,g:255,b:198},{t:0.5,r:255,g:191,b:60},{t:1.0,r:255,g:78,b:125}
+  ];
+  let a=stops[0], b=stops[stops.length-1];
+  for (let i=0;i<stops.length-1;i++) if (level>=stops[i].t && level<=stops[i+1].t) { a=stops[i]; b=stops[i+1]; break; }
+  const k=(level-a.t)/(b.t-a.t);
+  return `rgb(${Math.round(a.r+(b.r-a.r)*k)},${Math.round(a.g+(b.g-a.g)*k)},${Math.round(a.b+(b.b-a.b)*k)})`;
+}
+
+function renderHeatmap() {
+  const layer = bodySvg.querySelector('#heatmapLayer');
+  if (!layer) return;
+  const regions = POSTURES[currentPosture].heatRegions || {};
+  layer.innerHTML = '';
+  Object.keys(regions).forEach(key => {
+    const r = regions[key];
+    const level = heatState[key] ?? 0.3;
+    const color = heatColor(level);
+    const circ = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circ.setAttribute('cx', r.x); circ.setAttribute('cy', r.y);
+    circ.setAttribute('r', r.r*(0.85+level*0.4));
+    circ.setAttribute('fill', color);
+    circ.setAttribute('opacity', 0.25+level*0.55);
+    circ.setAttribute('class','heat-region');
+    circ.dataset.region = key;
+    layer.appendChild(circ);
+  });
+}
+function updateHeatState() {
+  const stress = window.METRICS.constructs.stress.val;
+  const autoBal = window.METRICS.autonomic.lfhf.val;
+  const cogLoad = window.METRICS.constructs.cogload.val;
+  const sympN = Math.max(0,Math.min(1,(autoBal-0.5)/2.5));
+  const p = currentPosture;
+  const ex = p==='run'?0.5:p==='walk'?0.25:0;
+  const targets = {
+    prefrontal: 0.25+cogLoad*0.55+window.METRICS.constructs.attention.val*0.2,
+    amygdala:   0.2 +stress*0.7+sympN*0.15,
+    heart:      0.3 +sympN*0.4+ex,
+    lungs:      0.3 +sympN*0.3+ex*0.9,
+    adrenal:    0.15+stress*0.8,
+    gut:        0.4 -sympN*0.3+(1-stress)*0.2,
+    palmL:      0.2 +stress*0.55+sympN*0.2,
+    palmR:      0.2 +stress*0.55+sympN*0.2,
+    quadL: ex, quadR: ex,
+  };
+  Object.keys(heatState).forEach(k => {
+    const t = targets[k] ?? 0.3;
+    heatState[k] += (Math.max(0,Math.min(1,t))-heatState[k])*0.08;
+  });
+  const layer = bodySvg.querySelector('#heatmapLayer');
+  if (!layer) return;
+  layer.querySelectorAll('.heat-region').forEach(el => {
+    const key = el.dataset.region;
+    const r = POSTURES[currentPosture].heatRegions?.[key];
+    if (!r) return;
+    const level = heatState[key];
+    el.setAttribute('fill', heatColor(level));
+    el.setAttribute('opacity', 0.25+level*0.55);
+    el.setAttribute('r', r.r*(0.85+level*0.4));
+  });
+}
+
+// ============================================================
+// Living body — heart beat pulse, chest breath, brain shimmer
+// ============================================================
+let livingEnabled = true;
+function updateLivingBody(now) {
+  if (!livingEnabled) return;
+  const p = POSTURES[currentPosture];
+  // Heartbeat: circle grows briefly at QRS
+  const heart = bodySvg.querySelector('#heartPulse');
+  if (heart) {
+    // intensity rises during first 20% of beat
+    const phase = SIG.phase;
+    const pulse = phase < 0.15 ? Math.sin(phase/0.15*Math.PI) : 0;
+    const base = currentPosture==='run' ? 95 : 80;
+    heart.setAttribute('r', base + pulse*18);
+    heart.setAttribute('opacity', 0.6 + pulse*0.5);
+  }
+  // Chest breath: scale thorax group
+  const thorax = bodySvg.querySelector('#thorax');
+  if (thorax && p.chest) {
+    const br = Math.sin(SIG.breathPhase * Math.PI * 2);
+    const scale = 1 + br*0.015;
+    const cx = p.chest.x, cy = p.chest.pivotY;
+    thorax.setAttribute('transform', `translate(${cx*(1-scale)}, ${cy*(1-scale)}) scale(${scale})`);
+  }
+  // Brain glyph: pulse with alpha phase
+  const brain = bodySvg.querySelector('#brainGlyph');
+  if (brain) {
+    const a = 0.45 + Math.sin(SIG.alphaPhase)*0.15 + window.METRICS.bands.alpha.val*0.4;
+    brain.setAttribute('opacity', Math.min(0.95, a));
+  }
+}
+
+// ============================================================
+// Body region hover → highlight from device cards
+// ============================================================
+window.highlightRegions = function(regionIds, color) {
+  const layer = bodySvg.querySelector('#livingLayer');
+  if (!layer) return;
+  layer.innerHTML = '';
+  if (!regionIds || !regionIds.length) return;
+  const p = POSTURES[currentPosture];
+  regionIds.forEach(id => {
+    const a = p.anchors[id] || p.heatRegions[id];
+    if (!a) return;
+    const ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ring.setAttribute('cx', a.x); ring.setAttribute('cy', a.y);
+    ring.setAttribute('r', 22);
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', color || '#e8ecf5');
+    ring.setAttribute('stroke-width', 1.5);
+    ring.setAttribute('opacity', 0.9);
+    ring.style.filter = `drop-shadow(0 0 10px ${color||'#e8ecf5'})`;
+    ring.setAttribute('class','region-highlight');
+    layer.appendChild(ring);
+    // Pulsing outer ring
+    const outer = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    outer.setAttribute('cx', a.x); outer.setAttribute('cy', a.y);
+    outer.setAttribute('r', 4); outer.setAttribute('fill','none');
+    outer.setAttribute('stroke', color||'#e8ecf5'); outer.setAttribute('stroke-width', 1);
+    outer.style.animation = 'ringPulse 1.4s ease-out infinite';
+    layer.appendChild(outer);
+  });
+};
+
+// ============================================================
+// Waveform nodes
+// ============================================================
+function buildNodes(posture) {
+  waveContainer.innerHTML = '';
+  connectorSvg.innerHTML = '';
+  waveNodes = [];
+  MODALITIES.forEach((mod, idx) => {
+    const anchor = POSTURES[posture].anchors[mod.anchor];
+    if (!anchor) return;
+    const side = anchor.side;
+    const el = document.createElement('div');
+    el.className = 'wave-node ' + side;
+    el.style.setProperty('--accent', mod.color);
+    el.dataset.anchor = mod.anchor;
+    el.dataset.side = side;
+    el.dataset.device = mod.device;
+    el.style.animationDelay = (idx*0.08)+'s';
+    const qClass = mod.quality==='warn' ? 'warn' : mod.quality==='bad' ? 'bad' : '';
+    el.innerHTML = `
+      <div class="node-label">
+        <span class="mod" style="color:${mod.color}">${mod.label}</span>
+        <span>${mod.ch}</span>
+        <span class="q-dot ${qClass}" title="signal quality"></span>
+      </div>
+      <div class="node-value">
+        <span class="val">${mod.valueFn()}</span><span class="node-unit">${mod.unit}</span>
+      </div>
+      <canvas width="380" height="88"></canvas>`;
+    waveContainer.appendChild(el);
+    const canvas = el.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    waveNodes.push({ el, canvas, ctx, mod, anchorKey:mod.anchor, buffer:new Float32Array(400).fill(0), side });
+  });
+  layoutNodes();
+  drawConnectors();
+}
+
+function layoutNodes() {
+  const stage = document.getElementById('stageCenter');
+  const stageRect = stage.getBoundingClientRect();
+  const anchors = POSTURES[currentPosture].anchors;
+  // Use SVG's own transform matrix to get accurate viewBox→screen coords
+  const ctm = bodySvg.getScreenCTM();
+  if (!ctm) return;
+  const toStage = (vx, vy) => {
+    const pt = bodySvg.createSVGPoint(); pt.x = vx; pt.y = vy;
+    const s = pt.matrixTransform(ctm);
+    return { x: s.x - stageRect.left, y: s.y - stageRect.top };
+  };
+  const lefts = waveNodes.filter(n=>n.side==='left').sort((a,b)=>anchors[a.anchorKey].y-anchors[b.anchorKey].y);
+  const rights = waveNodes.filter(n=>n.side==='right').sort((a,b)=>anchors[a.anchorKey].y-anchors[b.anchorKey].y);
+  // Column X positions: just outside the body silhouette
+  const leftCol  = toStage(220, 450).x;
+  const rightCol = toStage(580, 450).x;
+  const gutter = 36;
+  function place(list, side) {
+    list.forEach(node => {
+      const a = anchors[node.anchorKey];
+      const anc = toStage(a.x, a.y);
+      const col = side==='left'
+        ? leftCol  - gutter - 190   // 190 = node width
+        : rightCol + gutter;
+      node.el.style.left = col + 'px';
+      if (side==='left') node.el.style.transform = 'none';
+      node.el.style.top = (anc.y - 34) + 'px';
+    });
+    const minSpacing = 96;
+    for (let i=1;i<list.length;i++) {
+      const prevY = parseFloat(list[i-1].el.style.top);
+      const curY = parseFloat(list[i].el.style.top);
+      if (curY - prevY < minSpacing) list[i].el.style.top = (prevY + minSpacing) + 'px';
+    }
+  }
+  place(lefts,'left'); place(rights,'right');
+}
+
+function drawConnectors() {
+  const stage = document.getElementById('stageCenter');
+  const stageRect = stage.getBoundingClientRect();
+  connectorSvg.setAttribute('width', stageRect.width);
+  connectorSvg.setAttribute('height', stageRect.height);
+  connectorSvg.innerHTML = '';
+  const ctm = bodySvg.getScreenCTM();
+  if (!ctm) return;
+  const toStage = (vx, vy) => {
+    const pt = bodySvg.createSVGPoint(); pt.x = vx; pt.y = vy;
+    const s = pt.matrixTransform(ctm);
+    return { x: s.x - stageRect.left, y: s.y - stageRect.top };
+  };
+  const anchors = POSTURES[currentPosture].anchors;
+  waveNodes.forEach(node => {
+    const a = anchors[node.anchorKey];
+    const anc = toStage(a.x, a.y);
+    const ax = anc.x, ay = anc.y;
+    const rectN = node.el.getBoundingClientRect();
+    let nx, ny;
+    if (node.side==='left') { nx = rectN.right - stageRect.left; ny = rectN.top + rectN.height/2 - stageRect.top; }
+    else { nx = rectN.left - stageRect.left; ny = rectN.top + rectN.height/2 - stageRect.top; }
+    const midX = (ax + nx)/2;
+    const d = `M ${ax} ${ay} C ${midX} ${ay}, ${midX} ${ny}, ${nx} ${ny}`;
+    const gradId = 'g_'+node.mod.id;
+    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+    defs.innerHTML = `<linearGradient id="${gradId}" x1="${node.side==='left'?'100%':'0%'}" y1="0%" x2="${node.side==='left'?'0%':'100%'}" y2="0%"><stop offset="0%" stop-color="${node.mod.color}" stop-opacity="0.9"/><stop offset="100%" stop-color="${node.mod.color}" stop-opacity="0.15"/></linearGradient>`;
+    connectorSvg.appendChild(defs);
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d); path.setAttribute('stroke', `url(#${gradId})`);
+    path.setAttribute('fill','none'); path.setAttribute('stroke-width','1');
+    path.setAttribute('stroke-dasharray','3 3'); path.style.opacity='0.55';
+    connectorSvg.appendChild(path);
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',ax); dot.setAttribute('cy',ay); dot.setAttribute('r',3);
+    dot.setAttribute('fill',node.mod.color);
+    dot.style.filter = `drop-shadow(0 0 6px ${node.mod.color})`;
+    connectorSvg.appendChild(dot);
+    const ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ring.setAttribute('cx',ax); ring.setAttribute('cy',ay); ring.setAttribute('r',4);
+    ring.setAttribute('fill','none'); ring.setAttribute('stroke',node.mod.color);
+    ring.setAttribute('stroke-width',1); ring.style.opacity=0.6;
+    ring.style.animation='ringPulse 2.6s ease-out infinite';
+    ring.style.animationDelay=(Math.random()*2)+'s';
+    connectorSvg.appendChild(ring);
+  });
+}
+
+// Resolve baseline range on mini-waveform (dashed horizontal lines)
+function drawBaselineGuides(ctx, W, H) {
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.setLineDash([2,3]);
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, H*0.25); ctx.lineTo(W, H*0.25); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, H*0.75); ctx.lineTo(W, H*0.75); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// ============================================================
+// Waveform draw loop
+// ============================================================
+let tCounter = 0;
+window.drawWaves = function() {
+  waveNodes.forEach(node => {
+    const { canvas, ctx, mod, buffer } = node;
+    const W = canvas.width, H = canvas.height;
+    const gen = GEN[mod.gen];
+    const chunk = gen(3, tCounter);
+    for (let i=0;i<buffer.length-chunk.length;i++) buffer[i] = buffer[i+chunk.length];
+    for (let i=0;i<chunk.length;i++) buffer[buffer.length-chunk.length+i] = chunk[i];
+    ctx.clearRect(0,0,W,H);
+    drawBaselineGuides(ctx, W, H);
+    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, mod.color+'30'); grad.addColorStop(1, mod.color+'00');
+    ctx.beginPath(); ctx.moveTo(0, H/2);
+    for (let i=0;i<buffer.length;i++) {
+      const x=(i/buffer.length)*W;
+      const y=H/2 - buffer[i]*(H*0.35);
+      ctx.lineTo(x,y);
+    }
+    ctx.lineTo(W,H/2); ctx.closePath();
+    ctx.fillStyle=grad; ctx.fill();
+    ctx.beginPath(); ctx.strokeStyle=mod.color; ctx.lineWidth=1.3;
+    ctx.shadowColor=mod.color; ctx.shadowBlur=6;
+    for (let i=0;i<buffer.length;i++) {
+      const x=(i/buffer.length)*W;
+      const y=H/2 - buffer[i]*(H*0.35);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke(); ctx.shadowBlur=0;
+    const leadY = H/2 - buffer[buffer.length-1]*(H*0.35);
+    ctx.beginPath(); ctx.arc(W-1, leadY, 2, 0, Math.PI*2);
+    ctx.fillStyle=mod.color; ctx.fill();
+    const valEl = node.el.querySelector('.val');
+    if (valEl) valEl.textContent = mod.valueFn();
+  });
+  tCounter += 3;
+};
+
+// ============================================================
+// Propagation particles: heart → wrist (PTT), brain → limbs
+// ============================================================
+let particles = [];
+let propEnabled = true;
+function spawnParticle(pathKey, color, speed) {
+  const p = POSTURES[currentPosture].propPaths?.[pathKey];
+  if (!p) return;
+  particles.push({ path:pathKey, t:0, speed, color, from:p.from, to:p.to, ctrl:p.ctrl });
+}
+function bez(from, ctrl, to, t) {
+  const u=1-t;
+  return [
+    u*u*from[0] + 2*u*t*ctrl[0] + t*t*to[0],
+    u*u*from[1] + 2*u*t*ctrl[1] + t*t*to[1],
+  ];
+}
+function tickPropagation(now) {
+  // Spawn: on heartbeat fire wrist particle; on alpha phase fire brain particles
+  if (propEnabled) {
+    if (SIG.phase < 0.05 && !tickPropagation._lastBeat) {
+      tickPropagation._lastBeat = true;
+      spawnParticle('heartWrist', '#ff4e7d', 0.0012); // PTT ~ 200-300 ms
+    } else if (SIG.phase > 0.1) tickPropagation._lastBeat = false;
+    // brain emissions every ~1s
+    if (!tickPropagation._lastBrain || now - tickPropagation._lastBrain > 1200) {
+      tickPropagation._lastBrain = now;
+      spawnParticle('brainHeart', '#7df9ff', 0.0009);
+      spawnParticle('brainPalmL', '#c6a1ff', 0.0008);
+    }
+  }
+
+  // Fit canvas
+  const stage = document.getElementById('stageCenter');
+  const rect = stage.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  if (propCanvas.width !== rect.width*dpr) {
+    propCanvas.width = rect.width*dpr;
+    propCanvas.height = rect.height*dpr;
+  }
+  const ctm = bodySvg.getScreenCTM();
+  if (!ctm) { propCtx.clearRect(0,0,propCanvas.width, propCanvas.height); return; }
+  const toScreen = ([x,y]) => {
+    const pt = bodySvg.createSVGPoint(); pt.x = x; pt.y = y;
+    const s = pt.matrixTransform(ctm);
+    return [ (s.x - rect.left)*dpr, (s.y - rect.top)*dpr ];
+  };
+
+  propCtx.clearRect(0,0,propCanvas.width, propCanvas.height);
+  particles = particles.filter(p => {
+    p.t += p.speed * 16;
+    if (p.t >= 1) return false;
+    const [px,py] = bez(p.from, p.ctrl, p.to, p.t);
+    const [sx,sy] = toScreen([px,py]);
+    // Draw glowing dot + trail
+    propCtx.shadowColor = p.color; propCtx.shadowBlur = 10*dpr;
+    propCtx.fillStyle = p.color;
+    propCtx.globalAlpha = 1 - p.t*0.3;
+    propCtx.beginPath(); propCtx.arc(sx, sy, 2.5*dpr, 0, Math.PI*2); propCtx.fill();
+    // Trail behind
+    for (let i=1; i<=6; i++) {
+      const tr = Math.max(0, p.t - i*0.015);
+      const [tx,ty] = bez(p.from, p.ctrl, p.to, tr);
+      const [sx2,sy2] = toScreen([tx,ty]);
+      propCtx.globalAlpha = (1 - p.t*0.3) * (1 - i/7) * 0.5;
+      propCtx.beginPath(); propCtx.arc(sx2, sy2, (2.5 - i*0.3)*dpr, 0, Math.PI*2); propCtx.fill();
+    }
+    propCtx.globalAlpha = 1; propCtx.shadowBlur = 0;
+    return true;
+  });
+}
+window.setPropEnabled = v => { propEnabled = v; if (!v) particles=[]; };
+window.setLivingEnabled = v => { livingEnabled = v; };
+
+// ============================================================
+// setPosture
+// ============================================================
+window.setPosture = function(p, opts={}) {
+  if (p === currentPosture && !opts.force) return;
+  const prev = currentPosture;
+  currentPosture = p;
+  bodySvg.innerHTML = POSTURES[p].body;
+  buildNodes(p);
+  renderHeatmap();
+  document.querySelectorAll('.posture-glyph').forEach(g => g.classList.toggle('active', g.dataset.posture===p));
+  // mark posture change on timeline
+  if (!opts.force && window.addMarker) window.addMarker({ kind:'posture', label: p });
+};
+window.getCurrentPosture = () => currentPosture;
+window.relayoutBody = () => { layoutNodes(); drawConnectors(); };
+window.tickPropagation = tickPropagation;
+window.updateLivingBody = updateLivingBody;
+window.updateHeatState = updateHeatState;
+
+</script>
+
+<!-- devices.js -->
+<script>
+// ============================================================
+//  DEVICES — device cards with location mapping & signal quality
+// ============================================================
+const DEVICES = [
+  {
+    id:'muse', name:'Muse S · EEG',
+    meta:'Headband · 256 Hz · BT',
+    regions:['head'],
+    modalities:['EEG'],
+    connected:true, snr:30, artifact:1.8,
+    color:'#7df9ff',
+  },
+  {
+    id:'polar', name:'Polar H10 · ECG',
+    meta:'Chest strap · 1 kHz · BT',
+    regions:['heart','lungs','gut'],
+    modalities:['ECG','HRV','RESP'],
+    connected:true, snr:36, artifact:0.6,
+    color:'#ff4e7d',
+  },
+  {
+    id:'empatica', name:'Empatica E4 · PPG/EDA',
+    meta:'Wristband · 64 Hz · BT',
+    regions:['skinWrist','armR'],
+    modalities:['PPG','EDA','TEMP'],
+    connected:true, snr:24, artifact:3.4,
+    color:'#c6a1ff',
+  },
+  {
+    id:'xhro', name:'XHRO · EMG/IMU',
+    meta:'Forearm · 2 kHz · BT',
+    regions:['armL','foot'],
+    modalities:['EMG','IMU'],
+    connected:true, snr:22, artifact:5.1,
+    color:'#b4e23f',
+  },
+  {
+    id:'oura', name:'Oura Ring',
+    meta:'Finger · pulsed · BT',
+    regions:['skinWrist'],
+    modalities:['PPG','TEMP'],
+    connected:false, snr:0, artifact:0,
+    color:'#ffd447',
+  },
+  {
+    id:'pupil', name:'Pupil Neon · gaze',
+    meta:'Frame · 200 Hz · USB',
+    regions:['head'],
+    modalities:['GAZE','PUPIL'],
+    connected:false, snr:0, artifact:0,
+    color:'#6bffc6',
+  },
+];
+
+function snrBar(snr, max=40) {
+  const pct = Math.min(100, (snr/max)*100);
+  const color = snr > 28 ? '#6bffc6' : snr > 18 ? '#ffbf3c' : '#ff4e7d';
+  return `<div class="snr-bar"><div class="snr-fill" style="width:${pct}%;background:${color};box-shadow:0 0 6px ${color}"></div></div>`;
+}
+
+function buildDeviceList() {
+  const host = document.getElementById('deviceList');
+  host.innerHTML = '';
+  DEVICES.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'device-card' + (d.connected ? ' connected' : '');
+    card.style.setProperty('--accent', d.color);
+    card.dataset.device = d.id;
+    card.innerHTML = `
+      <div class="device-head">
+        <span class="device-name">${d.name}</span>
+        <span class="device-status">${d.connected ? 'LIVE' : 'OFFLINE'}</span>
+      </div>
+      <div class="device-meta">${d.meta}</div>
+      <div class="modality-chips">
+        ${d.modalities.map(m => `<span class="mod-chip">${m}</span>`).join('')}
+      </div>
+      ${d.connected ? `
+        <div class="device-quality">
+          <span class="dq-label">SNR</span>
+          ${snrBar(d.snr)}
+          <span class="dq-val" id="snr-${d.id}">${d.snr}dB</span>
+          <span class="dq-label">ART</span>
+          <div class="snr-bar"><div class="snr-fill art" id="art-${d.id}" style="width:${Math.min(100,d.artifact*12)}%"></div></div>
+          <span class="dq-val" id="artv-${d.id}">${d.artifact.toFixed(1)}%</span>
+        </div>` : `
+        <div class="device-quality offline">
+          <span class="dq-offline">tap to connect →</span>
+        </div>`}
+    `;
+    // Hover: highlight the regions this device measures
+    card.addEventListener('mouseenter', () => {
+      if (!d.connected) return;
+      card.classList.add('highlighted');
+      window.highlightRegions(d.regions, d.color);
+    });
+    card.addEventListener('mouseleave', () => {
+      card.classList.remove('highlighted');
+      window.highlightRegions([], d.color);
+    });
+    // Click: toggle connection
+    card.addEventListener('click', () => {
+      d.connected = !d.connected;
+      if (d.connected) { d.snr = 20 + Math.random()*16; d.artifact = 0.5 + Math.random()*4; }
+      buildDeviceList();
+      updateDeviceCount();
+      if (window.addMarker) window.addMarker({ kind:'device', label:(d.connected?'+':'−')+d.id });
+    });
+    host.appendChild(card);
+  });
+  updateDeviceCount();
+}
+
+function updateDeviceCount() {
+  const c = DEVICES.filter(d=>d.connected).length;
+  const el = document.getElementById('deviceCount');
+  if (el) el.textContent = `${c} / ${DEVICES.length}`;
+}
+
+// Slowly drift SNR/artifact to feel live
+function driftDeviceQuality() {
+  DEVICES.forEach(d => {
+    if (!d.connected) return;
+    d.snr += (Math.random()-0.5) * 0.8;
+    d.snr = Math.max(10, Math.min(40, d.snr));
+    d.artifact += (Math.random()-0.5) * 0.2;
+    d.artifact = Math.max(0.2, Math.min(8, d.artifact));
+    const sEl = document.getElementById('snr-'+d.id);
+    const aEl = document.getElementById('art-'+d.id);
+    const avEl = document.getElementById('artv-'+d.id);
+    if (sEl) sEl.textContent = Math.round(d.snr)+'dB';
+    if (aEl) aEl.style.width = Math.min(100, d.artifact*12)+'%';
+    if (avEl) avEl.textContent = d.artifact.toFixed(1)+'%';
+  });
+  // Bottom bar aggregates
+  const live = DEVICES.filter(d=>d.connected);
+  if (live.length) {
+    const avgSnr = live.reduce((s,d)=>s+d.snr,0)/live.length;
+    const avgArt = live.reduce((s,d)=>s+d.artifact,0)/live.length;
+    const snrEl = document.getElementById('bbSnr');
+    const artEl = document.getElementById('bbArt');
+    if (snrEl) snrEl.textContent = Math.round(avgSnr)+'dB';
+    if (artEl) artEl.textContent = avgArt.toFixed(1)+'%';
+  }
+}
+
+window.buildDeviceList = buildDeviceList;
+window.driftDeviceQuality = driftDeviceQuality;
+window.DEVICES = DEVICES;
+
+</script>
+
+<!-- coherence.js -->
+<script>
+// ============================================================
+//  COHERENCE — cross-modal correlation web (radar-style network)
+// ============================================================
+// Shows which modalities are currently phase-locked / correlated.
+// Nodes = modalities; edges = live correlation strength.
+const coherenceCanvas = document.getElementById('coherenceCanvas');
+const coherenceCtx = coherenceCanvas.getContext('2d');
+
+const COHERE_NODES = [
+  { id:'eeg',  label:'EEG',  color:'#7df9ff', angle: -Math.PI/2 },
+  { id:'ecg',  label:'HR',   color:'#ff4e7d', angle: -Math.PI/2 + Math.PI*2/5 },
+  { id:'resp', label:'RSP',  color:'#6bffc6', angle: -Math.PI/2 + Math.PI*4/5 },
+  { id:'eda',  label:'EDA',  color:'#c6a1ff', angle: -Math.PI/2 + Math.PI*6/5 },
+  { id:'emg',  label:'EMG',  color:'#b4e23f', angle: -Math.PI/2 + Math.PI*8/5 },
+];
+
+// Each edge has a target coherence that slides toward a target based on state.
+const COHERE_EDGES = [
+  { a:'eeg', b:'ecg',  val:0.5, target:0.5 },  // neurocardiac
+  { a:'ecg', b:'resp', val:0.7, target:0.7 },  // RSA
+  { a:'resp',b:'eda',  val:0.3, target:0.3 },
+  { a:'eda', b:'emg',  val:0.2, target:0.2 },
+  { a:'emg', b:'eeg',  val:0.4, target:0.4 },
+  // cross-links
+  { a:'eeg', b:'resp', val:0.5, target:0.5 },
+  { a:'ecg', b:'eda',  val:0.4, target:0.4 },
+];
+
+function computeCoherenceTargets() {
+  const M = window.METRICS;
+  const resp = M.autonomic.resp.val;
+  const rmssd = M.autonomic.rmssd.val;
+  const stress = M.constructs.stress.val;
+  const focus = M.constructs.attention.val;
+  const cogload = M.constructs.cogload.val;
+  // RSA: stronger when resp slow + HRV high
+  const rsa = Math.min(1, Math.max(0, (rmssd/80)*0.5 + (15-resp)/15*0.5));
+  // Neurocardiac: stronger in focus
+  const neuro = Math.min(1, Math.max(0, focus*0.6 + (1-stress)*0.4));
+  // EDA↔RESP: rises with stress
+  const eda_resp = Math.min(1, 0.15 + stress*0.5);
+  // EDA↔EMG: rises with sympathetic
+  const eda_emg = Math.min(1, 0.15 + stress*0.4 + cogload*0.2);
+  // EMG↔EEG: movement artifact + focus break
+  const emg_eeg = Math.min(1, 0.1 + (1-focus)*0.4 + cogload*0.2);
+  // EEG↔RESP: mindful breathing coherence
+  const eeg_resp = Math.min(1, 0.2 + (1-stress)*focus*0.7);
+  const ecg_eda = Math.min(1, 0.2 + stress*0.5);
+
+  const targets = { 'eeg-ecg':neuro, 'ecg-resp':rsa, 'resp-eda':eda_resp,
+                    'eda-emg':eda_emg, 'emg-eeg':emg_eeg, 'eeg-resp':eeg_resp, 'ecg-eda':ecg_eda };
+  COHERE_EDGES.forEach(e => {
+    const k1 = `${e.a}-${e.b}`, k2 = `${e.b}-${e.a}`;
+    e.target = targets[k1] ?? targets[k2] ?? e.target;
+  });
+}
+
+function drawCoherence() {
+  computeCoherenceTargets();
+  COHERE_EDGES.forEach(e => { e.val += (e.target - e.val) * 0.04; });
+
+  const dpr = window.devicePixelRatio || 1;
+  const W = coherenceCanvas.width = coherenceCanvas.clientWidth*dpr;
+  const H = coherenceCanvas.height = coherenceCanvas.clientHeight*dpr;
+  if (W <= 0 || H <= 0) return;
+  const ctx = coherenceCtx;
+  ctx.clearRect(0,0,W,H);
+  const cx = W/2, cy = H/2 + 4*dpr;
+  const R = Math.min(W,H)/2 - 20*dpr;
+
+  // Node positions
+  const pos = {};
+  COHERE_NODES.forEach(n => {
+    pos[n.id] = { x: cx + Math.cos(n.angle)*R, y: cy + Math.sin(n.angle)*R, color:n.color, label:n.label };
+  });
+
+  // Rings (reference grid)
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1*dpr;
+  [0.33, 0.66, 1].forEach(r => {
+    ctx.beginPath(); ctx.arc(cx, cy, R*r, 0, Math.PI*2); ctx.stroke();
+  });
+
+  // Edges
+  COHERE_EDGES.forEach(e => {
+    const p1 = pos[e.a], p2 = pos[e.b];
+    if (!p1 || !p2) return;
+    const strength = e.val;
+    // Strong edges use modality colors; weak edges fade
+    const grad = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+    grad.addColorStop(0, p1.color + Math.round(strength*255).toString(16).padStart(2,'0').slice(0,2));
+    grad.addColorStop(1, p2.color + Math.round(strength*255).toString(16).padStart(2,'0').slice(0,2));
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = Math.max(0.5, strength*2.6)*dpr;
+    ctx.globalAlpha = 0.25 + strength*0.75;
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+
+  // Nodes
+  COHERE_NODES.forEach(n => {
+    const p = pos[n.id];
+    ctx.shadowColor = n.color; ctx.shadowBlur = 8*dpr;
+    ctx.fillStyle = n.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3.5*dpr, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = `${8*dpr}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'center';
+    // Put label outside the node
+    const lx = p.x + (p.x-cx)*0.18;
+    const ly = p.y + (p.y-cy)*0.18 + 3*dpr;
+    ctx.fillText(n.label, lx, ly);
+  });
+
+  // Center: overall coherence score
+  const overall = COHERE_EDGES.reduce((s,e)=>s+e.val,0)/COHERE_EDGES.length;
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = `italic ${14*dpr}px 'Instrument Serif', serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(overall.toFixed(2), cx, cy+2*dpr);
+  ctx.fillStyle = '#8a93a6';
+  ctx.font = `${7*dpr}px 'JetBrains Mono', monospace`;
+  ctx.fillText('Φ', cx, cy-10*dpr);
+}
+
+// Legend: the 2 strongest couplings right now
+function updateCoherenceLegend() {
+  const sorted = [...COHERE_EDGES].sort((a,b)=>b.val-a.val);
+  const top = sorted.slice(0,2);
+  const el = document.getElementById('coherenceLegend');
+  if (!el) return;
+  el.innerHTML = top.map(e => `
+    <div class="cr-legend-row">
+      <span class="cr-edge">${e.a.toUpperCase()} <span class="cr-tie">↔</span> ${e.b.toUpperCase()}</span>
+      <span class="cr-val">${e.val.toFixed(2)}</span>
+    </div>
+  `).join('');
+}
+
+window.drawCoherence = drawCoherence;
+window.updateCoherenceLegend = updateCoherenceLegend;
+
+</script>
+
+<!-- interventions.js -->
+<script>
+// ============================================================
+//  INTERVENTIONS — closed-loop with pre/post response + CI band
+// ============================================================
+const INTERVENTIONS = [
+  { id:'vns',   name:'Vagal Nerve Stim', status:'armed',    on:false, effect:+0.41, metric:'HRV',  trigger:'HRV < 35' },
+  { id:'audio', name:'Binaural · 40Hz',  status:'standby',  on:false, effect:+0.18, metric:'α',    trigger:'focus < 0.5' },
+  { id:'light', name:'Amber 620nm',      status:'standby',  on:false, effect:+0.22, metric:'EDA',  trigger:'stress > 0.7' },
+];
+
+function buildInterventionRows() {
+  const host = document.getElementById('interventionRows');
+  host.innerHTML = '';
+  INTERVENTIONS.forEach(i => {
+    const row = document.createElement('div');
+    row.className = 'interv-row';
+    row.dataset.id = i.id;
+    row.innerHTML = `
+      <span class="interv-name">${i.name}</span>
+      <span class="interv-trigger" title="Auto-trigger">${i.trigger}</span>
+      <span class="interv-status ${i.on?'on':''}">${i.on?'ACTIVE':i.status.toUpperCase()}</span>
+      <div class="toggle ${i.on?'on':''}" data-id="${i.id}"></div>
+    `;
+    row.querySelector('.toggle').addEventListener('click', e => {
+      e.stopPropagation();
+      toggleIntervention(i.id);
+    });
+    row.addEventListener('click', () => showInterventionDetail(i.id));
+    host.appendChild(row);
+  });
+}
+
+function toggleIntervention(id) {
+  const i = INTERVENTIONS.find(x=>x.id===id);
+  if (!i) return;
+  i.on = !i.on;
+  if (i.on) {
+    i.startT = performance.now();
+    startResponseCapture(i);
+    if (window.addMarker) window.addMarker({ kind:'vns-on', label:i.id.toUpperCase()+' ON' });
+  } else {
+    if (window.addMarker) window.addMarker({ kind:'vns-off', label:i.id.toUpperCase()+' OFF' });
+  }
+  buildInterventionRows();
+}
+
+// ============================================================
+// Response timeline — pre/post band with confidence interval
+// ============================================================
+const responseCanvas = document.getElementById('responseCanvas');
+const responseCtx = responseCanvas.getContext('2d');
+
+let responseState = {
+  active: null,             // which intervention
+  startT: 0,                // ms
+  preBuffer: [],            // past 30s of HRV
+  postBuffer: [],           // post HRV
+  baseline: 45,
+  baselineCI: [40, 50],     // confidence band
+  metric: 'HRV',
+};
+
+// Seed the pre-buffer with synthetic history (for demo)
+for (let i=0;i<120;i++) {
+  responseState.preBuffer.push(45 + Math.sin(i*0.1)*4 + (Math.random()-0.5)*3);
+}
+
+function startResponseCapture(i) {
+  responseState.active = i.id;
+  responseState.startT = performance.now();
+  responseState.postBuffer = [];
+  responseState.metric = i.metric;
+  responseState.baseline = i.metric==='HRV'? 45 : i.metric==='α'? 0.32 : 5.0;
+  // CI ±10% baseline
+  const b = responseState.baseline;
+  responseState.baselineCI = [b*0.88, b*1.12];
+}
+
+function tickResponse(now) {
+  // Sample every ~250ms
+  if (!tickResponse._last || now - tickResponse._last > 250) {
+    tickResponse._last = now;
+    const M = window.METRICS;
+    const v = responseState.metric==='HRV' ? M.autonomic.rmssd.val
+            : responseState.metric==='α'    ? M.bands.alpha.val*100
+            :                                 M.autonomic.eda.val;
+    if (responseState.active) {
+      responseState.postBuffer.push(v);
+      if (responseState.postBuffer.length > 240) responseState.postBuffer.shift();
+      // Nudge HRV upward when VNS is on (demo)
+      const active = INTERVENTIONS.find(i=>i.on && i.id===responseState.active);
+      if (active && responseState.metric==='HRV') {
+        M.autonomic.rmssd.target = Math.min(110, M.autonomic.rmssd.target + 0.05);
+      }
+    } else {
+      responseState.preBuffer.push(v);
+      if (responseState.preBuffer.length > 240) responseState.preBuffer.shift();
+    }
+  }
+  drawResponse();
+  updateResponseMeta();
+}
+
+function drawResponse() {
+  const dpr = window.devicePixelRatio || 1;
+  const W = responseCanvas.width = responseCanvas.clientWidth*dpr;
+  const H = responseCanvas.height = responseCanvas.clientHeight*dpr;
+  if (W <= 0 || H <= 0) return;
+  const ctx = responseCtx;
+  ctx.clearRect(0,0,W,H);
+
+  // Y-axis scaling: use baseline ± range
+  const yMin = responseState.baseline * 0.5;
+  const yMax = responseState.baseline * 1.8;
+  const yOf = v => H - ((v - yMin)/(yMax - yMin))*H;
+
+  // Baseline CI band (horizontal)
+  const ciTop = yOf(responseState.baselineCI[1]);
+  const ciBot = yOf(responseState.baselineCI[0]);
+  ctx.fillStyle = 'rgba(198,161,255,0.08)';
+  ctx.fillRect(0, ciTop, W, ciBot-ciTop);
+  ctx.strokeStyle = 'rgba(198,161,255,0.3)';
+  ctx.setLineDash([2*dpr, 3*dpr]);
+  ctx.lineWidth = 1*dpr;
+  const baseY = yOf(responseState.baseline);
+  ctx.beginPath(); ctx.moveTo(0, baseY); ctx.lineTo(W, baseY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Pre/post divider at midpoint
+  const dividerX = W * 0.5;
+  ctx.strokeStyle = 'rgba(198,161,255,0.5)';
+  ctx.setLineDash([3*dpr, 3*dpr]);
+  ctx.beginPath(); ctx.moveTo(dividerX, 0); ctx.lineTo(dividerX, H); ctx.stroke();
+  ctx.setLineDash([]);
+  // Label
+  ctx.fillStyle = 'rgba(198,161,255,0.6)';
+  ctx.font = `${7*dpr}px 'JetBrains Mono', monospace`;
+  ctx.textAlign = 'left';
+  ctx.fillText('ON', dividerX+3*dpr, 9*dpr);
+
+  // Pre curve (grey)
+  const pre = responseState.preBuffer.slice(-60);
+  ctx.strokeStyle = 'rgba(232,236,245,0.4)';
+  ctx.lineWidth = 1.2*dpr;
+  ctx.beginPath();
+  pre.forEach((v,i) => {
+    const x = (i/(60-1)) * dividerX;
+    const y = yOf(v);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Post curve (purple) with glow
+  const post = responseState.postBuffer.slice(-60);
+  if (post.length > 1) {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, 'rgba(198,161,255,0.25)');
+    grad.addColorStop(1, 'rgba(198,161,255,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(dividerX, H);
+    post.forEach((v,i) => {
+      const x = dividerX + (i/(60-1)) * (W - dividerX);
+      const y = yOf(v);
+      ctx.lineTo(x,y);
+    });
+    ctx.lineTo(dividerX + ((post.length-1)/(60-1)) * (W-dividerX), H);
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = '#c6a1ff'; ctx.lineWidth = 1.5*dpr;
+    ctx.shadowColor = '#c6a1ff'; ctx.shadowBlur = 6*dpr;
+    ctx.beginPath();
+    post.forEach((v,i) => {
+      const x = dividerX + (i/(60-1)) * (W - dividerX);
+      const y = yOf(v);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke(); ctx.shadowBlur = 0;
+    // End-dot
+    const lastV = post[post.length-1];
+    const lx = dividerX + ((post.length-1)/(60-1))*(W-dividerX);
+    const ly = yOf(lastV);
+    ctx.fillStyle = '#c6a1ff';
+    ctx.beginPath(); ctx.arc(lx, ly, 2.5*dpr, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function mean(arr) { return arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : 0; }
+function std(arr) { const m = mean(arr); return Math.sqrt(arr.reduce((s,v)=>s+(v-m)**2,0)/Math.max(1,arr.length-1)); }
+
+function updateResponseMeta() {
+  const pre = responseState.preBuffer.slice(-60);
+  const post = responseState.postBuffer.slice(-60);
+  const preM = mean(pre), postM = mean(post);
+  const preS = std(pre) || 1;
+  const pooled = Math.sqrt((preS**2 + (std(post)||1)**2)/2);
+  const d = (postM - preM) / (pooled || 1);
+  const rtEffect = document.getElementById('rtEffect');
+  if (rtEffect) rtEffect.textContent = `Δ · d = ${d>=0?'+':''}${d.toFixed(2)}`;
+
+  // Timer
+  const rtTimer = document.getElementById('rtTimer');
+  if (rtTimer) {
+    const active = INTERVENTIONS.find(i=>i.on);
+    if (active) {
+      const sec = Math.floor((performance.now() - responseState.startT)/1000);
+      rtTimer.textContent = `T+${sec}s`;
+    } else {
+      rtTimer.textContent = 'idle';
+    }
+  }
+  // Meta values
+  const pct = preM ? (postM-preM)/preM*100 : 0;
+  const rmMetric = document.getElementById('rmMetric');
+  if (rmMetric && post.length) rmMetric.textContent = (pct>=0?'+':'')+pct.toFixed(0)+'%';
+  const rmHr = document.getElementById('rmHr');
+  if (rmHr) {
+    const dHr = window.METRICS.autonomic.hr.val - 72;
+    rmHr.textContent = (dHr>=0?'+':'')+dHr.toFixed(0)+'bpm';
+  }
+  const rmResp = document.getElementById('rmResp');
+  if (rmResp) {
+    const dR = window.METRICS.autonomic.resp.val - 14;
+    rmResp.textContent = (dR>=0?'+':'')+dR.toFixed(1)+'/min';
+  }
+}
+
+function showInterventionDetail(id) { /* reserved for future overlay */ }
+
+window.buildInterventionRows = buildInterventionRows;
+window.tickResponse = tickResponse;
+window.INTERVENTIONS = INTERVENTIONS;
+
+</script>
+
+<!-- timeline.js -->
+<script>
+// ============================================================
+//  TIMELINE — session cursor, markers, bookmarks, time scope
+// ============================================================
+let markers = [];
+let sessionStartT = performance.now();
+let sessionLen = 600 * 1000; // 10 minutes visible window
+let currentScope = 'now';
+
+function addMarker({ kind, label }) {
+  const t = performance.now() - sessionStartT;
+  markers.push({ kind, label, t });
+  // Cap
+  if (markers.length > 50) markers.shift();
+  renderMarkers();
+}
+
+function renderMarkers() {
+  const host = document.getElementById('tlMarkers');
+  if (!host) return;
+  host.innerHTML = '';
+  markers.forEach(m => {
+    const xPct = Math.min(100, Math.max(0, (m.t / sessionLen) * 100));
+    const el = document.createElement('div');
+    el.className = 'tl-marker ' + m.kind;
+    el.style.left = xPct + '%';
+    el.title = `${m.label} @ ${Math.floor(m.t/1000)}s`;
+    host.appendChild(el);
+    if (m.kind === 'bookmark' || m.kind === 'vns-on') {
+      const lbl = document.createElement('div');
+      lbl.className = 'tl-label';
+      lbl.style.left = xPct + '%';
+      lbl.textContent = m.label;
+      host.appendChild(lbl);
+    }
+  });
+}
+
+function tickTimeline(now) {
+  const elapsed = now - sessionStartT;
+  if (elapsed > sessionLen) { sessionStartT = now - sessionLen * 0.1; markers = markers.filter(m => m.t > elapsed - sessionLen); }
+  const xPct = Math.min(100, (elapsed / sessionLen) * 100);
+  const cursor = document.getElementById('tlCursor');
+  if (cursor) cursor.style.left = xPct + '%';
+
+  // Session timer display
+  const sessionEl = document.getElementById('sessionTime');
+  if (sessionEl) {
+    const secs = Math.floor(elapsed/1000);
+    const hh = String(Math.floor(secs/3600)).padStart(2,'0');
+    const mm = String(Math.floor((secs%3600)/60)).padStart(2,'0');
+    const ss = String(secs%60).padStart(2,'0');
+    sessionEl.textContent = `${hh}:${mm}:${ss}`;
+  }
+}
+
+// ============================================================
+// Time scope switcher
+// ============================================================
+function setTimeScope(scope) {
+  currentScope = scope;
+  document.querySelectorAll('#timeScope .ts-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.scope === scope);
+  });
+  // When baseline scope is active, flash the metric bars to show delta vs baseline
+  document.body.classList.toggle('scope-baseline', scope === 'baseline');
+  document.body.classList.toggle('scope-session', scope === 'session');
+}
+
+// ============================================================
+// Bookmark + keyboard shortcuts
+// ============================================================
+function initBookmarkShortcut() {
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'b' || e.key === 'B') {
+      addMarker({ kind:'bookmark', label:'★ mark' });
+      flashBookmarkIndicator();
+    }
+  });
+  const btn = document.getElementById('btnBookmark');
+  if (btn) btn.addEventListener('click', () => {
+    addMarker({ kind:'bookmark', label:'★ mark' });
+    flashBookmarkIndicator();
+  });
+}
+
+function flashBookmarkIndicator() {
+  const btn = document.getElementById('btnBookmark');
+  if (!btn) return;
+  btn.classList.add('flashed');
+  setTimeout(() => btn.classList.remove('flashed'), 600);
+}
+
+window.addMarker = addMarker;
+window.tickTimeline = tickTimeline;
+window.setTimeScope = setTimeScope;
+window.initBookmarkShortcut = initBookmarkShortcut;
+
+</script>
+
+<!-- app.js -->
+<script>
+// ============================================================
+//  APP — main loop, wiring, tweaks
+// ============================================================
+(function init() {
+  // ---- Boot ----
+  window.buildConstructGrid();
+  window.buildDeviceList();
+  window.buildInterventionRows();
+  window.setPosture('stand', { force:true });
+  window.initBookmarkShortcut();
+
+  // ---- Posture glyph click handlers ----
+  document.querySelectorAll('.posture-glyph').forEach(g => {
+    g.addEventListener('click', () => window.setPosture(g.dataset.posture));
+  });
+
+  // ---- Time scope buttons ----
+  document.querySelectorAll('#timeScope .ts-btn').forEach(b => {
+    b.addEventListener('click', () => window.setTimeScope(b.dataset.scope));
+  });
+
+  // ---- Mode toggle (observe/intervene) ----
+  document.querySelectorAll('#modeToggle .mt-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#modeToggle .mt-btn').forEach(x => x.classList.toggle('active', x===b));
+      document.body.classList.toggle('intervene-mode', b.dataset.mode==='intervene');
+    });
+  });
+
+  // ---- Focus tabs: filter the right rail / dim nodes ----
+  document.querySelectorAll('#focusTabs .ft').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#focusTabs .ft').forEach(x => x.classList.toggle('active', x===b));
+      const focus = b.dataset.focus;
+      document.body.classList.remove('focus-neuro','focus-autonomic','focus-mental','focus-all');
+      document.body.classList.add('focus-' + focus);
+      // dim wave nodes not in focus
+      const mapping = {
+        neuro:    new Set(['eeg']),
+        autonomic:new Set(['ecg','resp','ppg','eda','hrv']),
+        mental:   new Set(['eeg','ecg','eda']), // constructs fed by these
+        all:      null,
+      };
+      const allow = mapping[focus];
+      document.querySelectorAll('.wave-node').forEach(n => {
+        const dev = n.dataset.device;
+        const modLabel = n.querySelector('.mod')?.textContent?.toLowerCase();
+        const key = modLabel;
+        if (!allow) n.classList.remove('dim');
+        else n.classList.toggle('dim', !allow.has(key));
+      });
+      // Collapse unrelated groups in right rail
+      document.querySelectorAll('.metric-group').forEach(g => {
+        const grp = g.dataset.group;
+        if (focus === 'all') g.setAttribute('data-open','1');
+        else g.setAttribute('data-open', (grp === focus || (focus==='mental' && grp==='mental')) ? '1' : '0');
+      });
+    });
+  });
+
+  // Metric group collapse
+  document.querySelectorAll('.metric-group-head').forEach(h => {
+    h.addEventListener('click', () => {
+      const g = h.parentElement;
+      const open = g.getAttribute('data-open') === '1';
+      g.setAttribute('data-open', open ? '0' : '1');
+      const c = h.querySelector('.mg-collapse');
+      if (c) c.textContent = open ? '+' : '−';
+    });
+  });
+
+  // Rail collapse toggle
+  document.getElementById('railToggle').addEventListener('click', () => {
+    document.getElementById('stage').classList.toggle('devices-hidden');
+    setTimeout(() => window.relayoutBody(), 450);
+  });
+
+  // Scenario override
+  document.querySelectorAll('#scenarioSelect .sc-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#scenarioSelect .sc-btn').forEach(x => x.classList.toggle('active', x===b));
+      window.setScenarioOverride(b.dataset.sc);
+      if (window.addMarker) window.addMarker({ kind:'posture', label:b.dataset.sc });
+    });
+  });
+
+  // Context card: update based on posture
+  function updateContext() {
+    const p = window.getCurrentPosture();
+    const postureNames = { sit:'seated', stand:'standing', walk:'walking', run:'running' };
+    const mets = { sit:1.0, stand:1.3, walk:3.3, run:8.4 };
+    const scenes = { sit:'focus · indoor', stand:'ambient · indoor', walk:'transit · outdoor', run:'cardio · outdoor' };
+    document.getElementById('ctxPosture').textContent = postureNames[p];
+    document.getElementById('ctxActivity').textContent = `${p==='run'?'intense':p==='walk'?'light':'still'} · ${mets[p].toFixed(1)} MET`;
+    document.getElementById('ctxScene').textContent = scenes[p];
+    const nextBeatMs = Math.round((1 - window.SIG.phase) * window.SIG.beatInterval);
+    // Time of day: fixed 22:14 for demo
+  }
+
+  // ---- Main tick ----
+  let last = performance.now();
+  function tick(now) {
+    try {
+      window.SIG.tick(now);
+      window.renderMetrics();
+      window.drawWaves();
+      window.tickPropagation(now);
+      window.updateLivingBody(now);
+      window.updateHeatState();
+      window.drawCoherence();
+      window.updateCoherenceLegend();
+      window.tickResponse(now);
+      window.tickTimeline(now);
+      updateContext();
+      // Latency stat jitter
+      if (!tick._lastLat || now - tick._lastLat > 1500) {
+        tick._lastLat = now;
+        const lat = Math.round(10 + Math.random()*8);
+        const el = document.getElementById('bbLat'); if (el) el.textContent = lat+'ms';
+        const sm = document.getElementById('bbSamples');
+        if (sm) {
+          const n = parseInt(sm.textContent) || 512;
+          sm.textContent = (n + Math.round(1 + Math.random()*2)) + 'k';
+        }
+      }
+    } catch (err) {
+      console.warn('tick error:', err);
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // Device quality drift (independent slower tick)
+  setInterval(() => window.driftDeviceQuality(), 800);
+
+  // ---- Auto-posture demo cycle (every 24s) ----
+  const postureOrder = ['stand', 'sit', 'walk', 'run'];
+  let pIdx = 0;
+  setInterval(() => {
+    pIdx = (pIdx + 1) % postureOrder.length;
+    window.setPosture(postureOrder[pIdx]);
+  }, 24000);
+
+  // ---- Seed some markers so the timeline isn't empty ----
+  setTimeout(() => window.addMarker({ kind:'bookmark', label:'Session start' }), 50);
+  setTimeout(() => window.addMarker({ kind:'posture', label:'stand' }), 300);
+
+  // ---- Resize ----
+  window.addEventListener('resize', () => { window.relayoutBody(); });
+  window.addEventListener('load',   () => { window.relayoutBody(); });
+
+  // ============================================================
+  // TWEAKS
+  // ============================================================
+  function applyTweaks(values) {
+    window.setLivingEnabled(!!values.living);
+    window.setPropEnabled(!!values.propagation);
+    document.body.classList.toggle('no-heatmap', !values.heatmap);
+    const speedMap = { '0.5':0.5, '1':1, '2':2, '4':4 };
+    window._speedMult = speedMap[values.speed] ?? 1;
+    // Palette
+    const root = document.documentElement;
+    if (values.palette === 'warm') {
+      root.style.setProperty('--eeg', '#ff8a3d');
+      root.style.setProperty('--ecg', '#ff4e7d');
+      root.style.setProperty('--eda', '#ff6b4a');
+    } else if (values.palette === 'mono') {
+      root.style.setProperty('--eeg', '#e8ecf5');
+      root.style.setProperty('--ecg', '#a0a8b8');
+      root.style.setProperty('--eda', '#c0c6d2');
+    } else {
+      root.style.setProperty('--eeg', '#7df9ff');
+      root.style.setProperty('--ecg', '#ff4e7d');
+      root.style.setProperty('--eda', '#c6a1ff');
+    }
+  }
+  // Init from TWEAK_DEFAULTS
+  const tv = Object.assign({}, window.TWEAK_DEFAULTS);
+  document.getElementById('tw-living').checked = tv.living;
+  document.getElementById('tw-prop').checked = tv.propagation;
+  document.getElementById('tw-heat').checked = tv.heatmap;
+  document.getElementById('tw-speed').value = String(tv.speed);
+  document.getElementById('tw-palette').value = tv.palette;
+  applyTweaks(tv);
+
+  function postEdit(key, val) {
+    window.parent.postMessage({ type:'__edit_mode_set_keys', edits: { [key]: val } }, '*');
+  }
+  document.getElementById('tw-living').addEventListener('change', e => { tv.living=e.target.checked; applyTweaks(tv); postEdit('living', tv.living); });
+  document.getElementById('tw-prop').addEventListener('change', e => { tv.propagation=e.target.checked; applyTweaks(tv); postEdit('propagation', tv.propagation); });
+  document.getElementById('tw-heat').addEventListener('change', e => { tv.heatmap=e.target.checked; applyTweaks(tv); postEdit('heatmap', tv.heatmap); });
+  document.getElementById('tw-speed').addEventListener('change', e => { tv.speed=parseFloat(e.target.value); applyTweaks(tv); postEdit('speed', tv.speed); });
+  document.getElementById('tw-palette').addEventListener('change', e => { tv.palette=e.target.value; applyTweaks(tv); postEdit('palette', tv.palette); });
+
+  // ============================================================
+  // DISPLAY MENU — panel toggles + density
+  // ============================================================
+  const DISPLAY_KEY = 'sync_v2_display';
+  const defaultDisplay = {
+    panels: { devices:true, metrics:true, coherence:false, intervention:false, timescope:false, state:true, timeline:true },
+    density: 'minimal'
+  };
+  let display = defaultDisplay;
+  try { const saved = JSON.parse(localStorage.getItem(DISPLAY_KEY)); if (saved) display = Object.assign({}, defaultDisplay, saved, { panels: Object.assign({}, defaultDisplay.panels, saved.panels||{}) }); } catch(e){}
+
+  function applyDisplay() {
+    const b = document.body;
+    Object.entries(display.panels).forEach(([k, v]) => {
+      b.classList.toggle('hide-'+k, !v);
+    });
+    b.classList.remove('density-minimal','density-standard','density-full');
+    b.classList.add('density-'+display.density);
+    // sync UI
+    document.querySelectorAll('#displayMenu input[data-panel]').forEach(inp => {
+      inp.checked = !!display.panels[inp.dataset.panel];
+    });
+    document.querySelectorAll('#displayMenu input[name="density"]').forEach(inp => {
+      inp.checked = inp.value === display.density;
+    });
+    // relayout body after panel changes
+    setTimeout(() => window.relayoutBody && window.relayoutBody(), 50);
+  }
+  function saveDisplay() { try { localStorage.setItem(DISPLAY_KEY, JSON.stringify(display)); } catch(e){} }
+  applyDisplay();
+
+  const btnDM = document.getElementById('btnDisplayMenu');
+  const menuDM = document.getElementById('displayMenu');
+  btnDM.addEventListener('click', e => {
+    e.stopPropagation();
+    menuDM.classList.toggle('open');
+  });
+  document.addEventListener('click', e => {
+    if (!menuDM.contains(e.target) && e.target !== btnDM) menuDM.classList.remove('open');
+  });
+  document.querySelectorAll('#displayMenu input[data-panel]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      display.panels[inp.dataset.panel] = inp.checked;
+      applyDisplay(); saveDisplay();
+    });
+  });
+  document.querySelectorAll('#displayMenu input[name="density"]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      if (inp.checked) { display.density = inp.value; applyDisplay(); saveDisplay(); }
+    });
+  });
+
+  // ============================================================
+  // PAGE NAV
+  // ============================================================
+  document.querySelectorAll('.pg-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      if (b.hasAttribute('disabled')) return;
+      document.querySelectorAll('.pg-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+
+  // Edit-mode protocol
+  window.addEventListener('message', e => {
+    if (!e.data) return;
+    if (e.data.type === '__activate_edit_mode') document.getElementById('tweaksPanel').style.display = 'block';
+    if (e.data.type === '__deactivate_edit_mode') document.getElementById('tweaksPanel').style.display = 'none';
+  });
+  window.parent.postMessage({ type:'__edit_mode_available' }, '*');
+
+})();
+
+</script>
+
+
+</body>
+</html>

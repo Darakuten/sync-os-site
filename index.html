@@ -355,6 +355,54 @@
     aspect-ratio: 1440 / 900;
   }
   .demo-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .demo-frame iframe { display: block; width: 100%; height: 100%; border: 0; background: #05060a; }
+  .demo-launch-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+    background: linear-gradient(180deg, rgba(8,9,12,0.0) 0%, rgba(8,9,12,0.55) 60%, rgba(8,9,12,0.85) 100%);
+    cursor: pointer;
+    transition: opacity .3s ease, backdrop-filter .3s ease;
+  }
+  .demo-launch-overlay:hover { backdrop-filter: blur(2px); }
+  .demo-launch-overlay.hidden { opacity: 0; pointer-events: none; }
+  .demo-launch-cta {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 18px 28px;
+    border-radius: 999px;
+    border: 0;
+    box-shadow: 0 30px 80px -20px rgba(109,240,255,0.4);
+    transition: transform .25s ease, box-shadow .25s ease;
+    cursor: pointer;
+  }
+  .demo-launch-cta:hover { transform: translateY(-2px); box-shadow: 0 40px 100px -20px rgba(109,240,255,0.6); }
+  .demo-launch-cta .play {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--ink); color: var(--paper);
+    display: inline-grid; place-items: center;
+    font-size: 11px; padding-left: 2px;
+  }
+  .demo-launch-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  }
+  .demo-launch-hint a { color: var(--accent); border-bottom: 1px solid rgba(109,240,255,0.4); }
+  .demo-launch-hint a:hover { border-bottom-color: var(--accent); }
   .demo-tag {
     position: absolute;
     top: 18px; left: 18px;
@@ -1070,13 +1118,25 @@
   </div>
 
   <div class="demo reveal" style="padding:0;">
-    <div class="demo-frame">
+    <div class="demo-frame" id="demoFrame">
       <div class="demo-tag"><span class="dot"></span><span data-i18n="demo.tag">Live capture · Sync OS v3</span></div>
       <video
         id="demoVideo"
         src="./assets/sync_os_demo.mp4"
         poster="./assets/sync_os_demo_poster.jpg"
         autoplay muted loop playsinline preload="metadata"></video>
+
+      <div class="demo-launch-overlay" id="demoLaunchOverlay" role="button" tabindex="0" aria-label="Launch interactive demo">
+        <button class="demo-launch-cta" id="demoLaunchBtn" type="button">
+          <span class="play">▶</span>
+          <span data-i18n="demo.launch.cta">Launch interactive demo</span>
+        </button>
+        <div class="demo-launch-hint">
+          <span data-i18n="demo.launch.hint">Real, click-anywhere prototype.</span>
+          &nbsp;<a href="./demo/" target="_blank" rel="noopener" data-i18n="demo.launch.newtab" onclick="event.stopPropagation();">Open in new tab ↗</a>
+        </div>
+      </div>
+
       <div class="demo-controls">
         <button class="demo-ctrl" id="demoSound" data-i18n="demo.sound.on">Sound on</button>
         <button class="demo-ctrl" id="demoFs" data-i18n="demo.fullscreen">Fullscreen</button>
@@ -1523,6 +1583,9 @@
       "demo.sound.on": "Sound on",
       "demo.sound.off": "Sound off",
       "demo.fullscreen": "Fullscreen",
+      "demo.launch.cta": "Launch interactive demo",
+      "demo.launch.hint": "Real, click-anywhere prototype.",
+      "demo.launch.newtab": "Open in new tab ↗",
 
       "chapter.intro.title": "Intro",
       "chapter.intro.sub": "A bio-adaptive AI platform.",
@@ -1701,6 +1764,9 @@
       "demo.sound.on": "音声オン",
       "demo.sound.off": "音声オフ",
       "demo.fullscreen": "全画面",
+      "demo.launch.cta": "インタラクティブデモを起動",
+      "demo.launch.hint": "ブラウザ上で実際に触れるプロトタイプ。",
+      "demo.launch.newtab": "新しいタブで開く ↗",
 
       "chapter.intro.title": "イントロ",
       "chapter.intro.sub": "バイオアダプティブAIプラットフォーム。",
@@ -1927,14 +1993,60 @@
     const fs = document.getElementById('demoFs');
     if (fs) {
       fs.addEventListener('click', () => {
-        const el = v.parentElement;
+        const target = document.getElementById('demoFrame') || v.parentElement;
         if (document.fullscreenElement) {
           document.exitFullscreen();
-        } else if (el.requestFullscreen) {
-          el.requestFullscreen();
+        } else if (target.requestFullscreen) {
+          target.requestFullscreen();
         }
       });
     }
+  }
+
+  // === Launch interactive demo (swap video -> iframe on demand) ===
+  const demoFrame = document.getElementById('demoFrame');
+  const launchOverlay = document.getElementById('demoLaunchOverlay');
+  const launchBtn = document.getElementById('demoLaunchBtn');
+  const soundCtrl = document.getElementById('demoSound');
+  let demoLaunched = false;
+
+  function launchInteractiveDemo() {
+    if (demoLaunched || !demoFrame) return;
+    demoLaunched = true;
+
+    if (v) {
+      try { v.pause(); } catch (e) {}
+      v.style.display = 'none';
+    }
+    if (soundCtrl) soundCtrl.style.display = 'none';
+
+    const iframe = document.createElement('iframe');
+    iframe.src = './demo/';
+    iframe.title = 'Sync OS interactive demo';
+    iframe.allow = 'fullscreen';
+    iframe.setAttribute('allowfullscreen', '');
+    demoFrame.insertBefore(iframe, demoFrame.firstChild);
+
+    if (launchOverlay) launchOverlay.classList.add('hidden');
+  }
+
+  if (launchOverlay) {
+    launchOverlay.addEventListener('click', (e) => {
+      if (e.target.tagName === 'A') return;
+      launchInteractiveDemo();
+    });
+    launchOverlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        launchInteractiveDemo();
+      }
+    });
+  }
+  if (launchBtn) {
+    launchBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      launchInteractiveDemo();
+    });
   }
 </script>
 
